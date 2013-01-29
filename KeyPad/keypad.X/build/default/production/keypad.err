@@ -1,0 +1,7 @@
+Warning[205] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\KEYPAD\KEYPAD.X\KEYPAD.ASM 1 : Found directive in column 1. (list)
+Warning[207] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\KEYPAD\KEYPAD.X\KEYPAD.ASM 14 : Found label after column 1. (RS)
+Warning[207] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\KEYPAD\KEYPAD.X\KEYPAD.ASM 15 : Found label after column 1. (E)
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\KEYPAD\KEYPAD.X\KEYPAD.ASM 39 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\KEYPAD\KEYPAD.X\KEYPAD.ASM 41 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\KEYPAD\KEYPAD.X\KEYPAD.ASM 42 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\KEYPAD\KEYPAD.X\KEYPAD.ASM 43 : Register in operand not in bank 0.  Ensure that bank bits are correct.
