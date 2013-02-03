@@ -2,8 +2,9 @@
     #include <p16f877.inc>
     __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
 
+
 ; Declare variables
-    cblock 0x70
+    cblock 0x1000
         lcd_d1 ;Used for LCD_DELAY macro
         lcd_d2 ;Used for DELAY_5MS subroutine
         com ;For writing instruction to LCD
@@ -12,6 +13,10 @@
         COUNTH ;Used for DELAY_500MS subroutine
         COUNTM ;(see above)
         COUNTL ;(see above)
+        A_PRESSED
+        B_PRESSED
+        comp_temp
+        w_temp
     endc
 
 ; Declare constants for pin assignment (LCD on PORTD, see Lab 2 on Portal)
@@ -75,22 +80,44 @@ MAIN_INIT
 ; Main Program
 ;*************************************
 MAIN
+    call CLEAR_LCD
     DISPLAY WELCOME_MESSAGE
 
     call SWITCH_LINES
     DISPLAY INPUT_LINE_CHAR
+    goto KEYPAD_POLLING
+
+REALTIME
+    call CLEAR_LCD
+    DISPLAY REALTIME_MESSAGE
+
+    call SWITCH_LINES
+    DISPLAY INPUT_LINE_CHAR
+    goto KEYPAD_POLLING
 
 KEYPAD_POLLING
     btfss KEYPAD_P ;Check if keypad is pressed
     goto $-1
     swapf PORTB,W     ;Read PortB<7:4> into W<3:0>, because KEYPAD pins corresponds to RB4-7
     andlw 0x0F
+
+    call COMPARISON_A
+    btfss A_PRESSED, 0
+    goto NEXT
+    goto REALTIME
+
+    call COMPARISON_B
+    btfsS B_PRESSED, 0
+    goto NEXT
+    goto MAIN
+
+NEXT
     call KEYPAD_INPUT_CHARACTERS ;Convert keypad values to LCD display values
     call WR_DATA
     btfsc KEYPAD_P     ;Wait until key is released
     goto $-1
-    goto KEYPAD_POLLING
 
+    goto KEYPAD_POLLING
 
     goto $
 
@@ -101,6 +128,10 @@ KEYPAD_POLLING
 WELCOME_MESSAGE
 		addwf	PCL,F
 		dt		"Main Menu", 0
+
+REALTIME_MESSAGE
+        addwf   PCL,F
+        dt      "Real Time", 0
 
 INPUT_LINE_CHAR
 		addwf	PCL,F
@@ -229,6 +260,40 @@ DELAY_500MS_0
     goto $+1
     nop
     nop
+    return
+
+COMPARISON_A
+    movwf w_temp
+    movwf comp_temp
+    btfsc comp_temp, 0
+    goto $+2
+    btfss comp_temp, 1
+    goto $+2
+    btfsc comp_temp, 2
+    goto $+2
+    btfsc comp_temp, 3
+    goto $+4
+    clrw
+    addwf 1, W
+    movwf A_PRESSED
+    movf w_temp, W
+    return
+
+COMPARISON_B
+    movwf w_temp
+    movwf comp_temp
+    btfss comp_temp, 0
+    goto $+2
+    btfsc comp_temp, 1
+    goto $+2
+    btfsc comp_temp, 2
+    goto $+2
+    btfsc comp_temp, 3
+    goto $+4
+    clrw
+    addwf 1, W
+    movwf B_PRESSED
+    movf w_temp, W
     return
 
     END

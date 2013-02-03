@@ -1,4 +1,4 @@
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE  1
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -17,312 +17,514 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00540         LIST
 2007   3F72           00003     __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
                       00004 
-                      00005 ; Declare variables
-                      00006     cblock 0x70
-  00000070            00007         lcd_d1 ;Used for LCD_DELAY macro
-  00000071            00008         lcd_d2 ;Used for DELAY_5MS subroutine
-  00000072            00009         com ;For writing instruction to LCD
-  00000073            00010         table_counter ;Used for displaying characters on LCD
-  00000074            00011         dat ;For writing data to LCD
-  00000075            00012         COUNTH ;Used for DELAY_500MS subroutine
-  00000076            00013         COUNTM ;(see above)
-  00000077            00014         COUNTL ;(see above)
-                      00015     endc
-                      00016 
-                      00017 ; Declare constants for pin assignment (LCD on PORTD, see Lab 2 on Portal)
-                      00018     #define     LCD_RS  PORTD,2
-                      00019         #define LCD_E   PORTD,3
-                      00020     #define KEYPAD_P PORTB,1
+                      00005 
+                      00006 ; Declare variables
+                      00007     cblock 0x1000
+  00001000            00008         lcd_d1 ;Used for LCD_DELAY macro
+  00001001            00009         lcd_d2 ;Used for DELAY_5MS subroutine
+  00001002            00010         com ;For writing instruction to LCD
+  00001003            00011         table_counter ;Used for displaying characters on LCD
+  00001004            00012         dat ;For writing data to LCD
+  00001005            00013         COUNTH ;Used for DELAY_500MS subroutine
+  00001006            00014         COUNTM ;(see above)
+  00001007            00015         COUNTL ;(see above)
+  00001008            00016         A_PRESSED
+  00001009            00017         B_PRESSED
+  0000100A            00018         comp_temp
+  0000100B            00019         w_temp
+                      00020     endc
                       00021 
-                      00022     ORG 0x0000
-0000   2???           00023     goto MAIN_INIT
-                      00024 
-                      00025 ;***************************
-                      00026 ;   Delay: 160ms
-                      00027 ;***************************
-                      00028 LCD_DELAY macro
-                      00029     movlw 0xff
-                      00030     movwf lcd_d1
-                      00031     decfsz lcd_d1, f ; Decrement lcd_d1, if lcd_d1 = 0, then discard next instruction
-                      00032     goto $-1
-                      00033     endm
-                      00034 
-                      00035 ;***************************
-                      00036 ;   Display Macro
-                      00037 ;***************************
-                      00038 DISPLAY macro MESSAGE
-                      00039     local D_LOOP
-                      00040     local D_END
-                      00041     clrf table_counter
-                      00042     clrw
-                      00043 D_LOOP
-                      00044     movf table_counter, W
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE  2
+                      00022 ; Declare constants for pin assignment (LCD on PORTD, see Lab 2 on Portal)
+                      00023     #define     LCD_RS  PORTD,2
+                      00024         #define LCD_E   PORTD,3
+                      00025     #define KEYPAD_P PORTB,1
+                      00026 
+                      00027     ORG 0x0000
+0000   2???           00028     goto MAIN_INIT
+                      00029 
+                      00030 ;***************************
+                      00031 ;   Delay: 160ms
+                      00032 ;***************************
+                      00033 LCD_DELAY macro
+                      00034     movlw 0xff
+                      00035     movwf lcd_d1
+                      00036     decfsz lcd_d1, f ; Decrement lcd_d1, if lcd_d1 = 0, then discard next instruction
+                      00037     goto $-1
+                      00038     endm
+                      00039 
+                      00040 ;***************************
+                      00041 ;   Display Macro
+                      00042 ;***************************
+                      00043 DISPLAY macro MESSAGE
+                      00044     local D_LOOP
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00045     call MESSAGE ;??
-                      00046     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-                      00047     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-                      00048         goto D_END
-                      00049     call WR_DATA ;??
-                      00050     incf table_counter, F
-                      00051     goto D_LOOP
-                      00052 D_END
-                      00053     endm
-                      00054 
-                      00055 ;***************************************
-                      00056 ; Initialize LCD
-                      00057 ;***************************************
-0001                  00058 MAIN_INIT
-0001   018B           00059     clrf INTCON ; No interrupt
-0002   1683           00060     bsf STATUS, RP0
+                      00045     local D_END
+                      00046     clrf table_counter
+                      00047     clrw
+                      00048 D_LOOP
+                      00049     movf table_counter, W
+                      00050     call MESSAGE ;??
+                      00051     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+                      00052     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+                      00053         goto D_END
+                      00054     call WR_DATA ;??
+                      00055     incf table_counter, F
+                      00056     goto D_LOOP
+                      00057 D_END
+                      00058     endm
+                      00059 
+                      00060 ;***************************************
+                      00061 ; Initialize LCD
+                      00062 ;***************************************
+0001                  00063 MAIN_INIT
+0001   018B           00064     clrf INTCON ; No interrupt
+0002   1683           00065     bsf STATUS, RP0
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0003   0185           00061     clrf TRISA
-0004   30F2           00062     movlw b'11110010' ;Set required keypad inputs (PORTB is KEYPAD)
+0003   0185           00066     clrf TRISA
+0004   30F2           00067     movlw b'11110010' ;Set required keypad inputs (PORTB is KEYPAD)
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0005   0086           00063     movwf TRISB
+0005   0086           00068     movwf TRISB
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0006   0187           00064     clrf TRISC ;All port C is output
+0006   0187           00069     clrf TRISC ;All port C is output
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0007   0188           00065     clrf TRISD ;All port D is output (PORTD is LCD)
-                      00066 
-0008   1283           00067     bcf STATUS, RP0 ;Select bank 0
-0009   0185           00068     clrf PORTA
-000A   0186           00069     clrf PORTB
-000B   0187           00070     clrf PORTC
-000C   0188           00071     clrf PORTD
-000D   2???           00072     call INITLCD
-                      00073 
-                      00074 ;*************************************
-                      00075 ; Main Program
-                      00076 ;*************************************
-000E                  00077 MAIN
-                      00078     DISPLAY WELCOME_MESSAGE
+0007   0188           00070     clrf TRISD ;All port D is output (PORTD is LCD)
+                      00071 
+0008   1283           00072     bcf STATUS, RP0 ;Select bank 0
+0009   0185           00073     clrf PORTA
+000A   0186           00074     clrf PORTB
+000B   0187           00075     clrf PORTC
+000C   0188           00076     clrf PORTD
+000D   2???           00077     call INITLCD
+                      00078 
+                      00079 ;*************************************
+                      00080 ; Main Program
+                      00081 ;*************************************
+000E                  00082 MAIN
+000E   2???           00083     call CLEAR_LCD
+                      00084     DISPLAY WELCOME_MESSAGE
   0000                    M     local D_LOOP
   0000                    M     local D_END
-000E   01F3               M     clrf table_counter
-000F   0103               M     clrw
-0010                      M D_LOOP
-0010   0873               M     movf table_counter, W
-0011   2???               M     call WELCOME_MESSAGE ;??
-0012   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-0013   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-0014   2???               M         goto D_END
-0015   2???               M     call WR_DATA ;??
-0016   0AF3               M     incf table_counter, F
-0017   2???               M     goto D_LOOP
-0018                      M D_END
-                      00079 
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE  3
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000F   0183               M     clrf table_counter
+0010   0103               M     clrw
+0011                      M D_LOOP
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0018   2???           00080     call SWITCH_LINES
-                      00081     DISPLAY INPUT_LINE_CHAR
+0011   0803               M     movf table_counter, W
+0012   2???               M     call WELCOME_MESSAGE ;??
+0013   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0014   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0015   2???               M         goto D_END
+0016   2???               M     call WR_DATA ;??
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0017   0A83               M     incf table_counter, F
+0018   2???               M     goto D_LOOP
+0019                      M D_END
+                      00085 
+0019   2???           00086     call SWITCH_LINES
+                      00087     DISPLAY INPUT_LINE_CHAR
   0000                    M     local D_LOOP
   0000                    M     local D_END
-0019   01F3               M     clrf table_counter
-001A   0103               M     clrw
-001B                      M D_LOOP
-001B   0873               M     movf table_counter, W
-001C   2???               M     call INPUT_LINE_CHAR ;??
-001D   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-001E   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-001F   2???               M         goto D_END
-0020   2???               M     call WR_DATA ;??
-0021   0AF3               M     incf table_counter, F
-0022   2???               M     goto D_LOOP
-0023                      M D_END
-                      00082 
-0023                  00083 KEYPAD_POLLING
-0023   1C86           00084     btfss KEYPAD_P ;Check if keypad is pressed
-0024   2???           00085     goto $-1
-0025   0E06           00086     swapf PORTB,W     ;Read PortB<7:4> into W<3:0>, because KEYPAD pins corresponds to RB4-7
-0026   390F           00087     andlw 0x0F
-0027   2???           00088     call KEYPAD_INPUT_CHARACTERS ;Convert keypad values to LCD display values
-0028   2???           00089     call WR_DATA
-0029   1886           00090     btfsc KEYPAD_P     ;Wait until key is released
-002A   2???           00091     goto $-1
-002B   2???           00092     goto KEYPAD_POLLING
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+001A   0183               M     clrf table_counter
+001B   0103               M     clrw
+001C                      M D_LOOP
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+001C   0803               M     movf table_counter, W
+001D   2???               M     call INPUT_LINE_CHAR ;??
+001E   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+001F   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0020   2???               M         goto D_END
+0021   2???               M     call WR_DATA ;??
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0022   0A83               M     incf table_counter, F
+0023   2???               M     goto D_LOOP
+0024                      M D_END
+0024   2???           00088     goto KEYPAD_POLLING
+                      00089 
+0025                  00090 REALTIME
+0025   2???           00091     call CLEAR_LCD
+                      00092     DISPLAY REALTIME_MESSAGE
+  0000                    M     local D_LOOP
+  0000                    M     local D_END
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0026   0183               M     clrf table_counter
+0027   0103               M     clrw
+0028                      M D_LOOP
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0028   0803               M     movf table_counter, W
+0029   2???               M     call REALTIME_MESSAGE ;??
+002A   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+002B   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+002C   2???               M         goto D_END
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+002D   2???               M     call WR_DATA ;??
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+002E   0A83               M     incf table_counter, F
+002F   2???               M     goto D_LOOP
+0030                      M D_END
                       00093 
-                      00094 
-002C   2???           00095     goto $
-                      00096 
-                      00097 ;***************************************
-                      00098 ; Look up table
-                      00099 ;***************************************
-                      00100 
-002D                  00101 WELCOME_MESSAGE
-002D   0782           00102                 addwf   PCL,F
-002E   344D 3461 3469 00103                 dt              "Main Menu", 0
+0030   2???           00094     call SWITCH_LINES
+                      00095     DISPLAY INPUT_LINE_CHAR
+  0000                    M     local D_LOOP
+  0000                    M     local D_END
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0031   0183               M     clrf table_counter
+0032   0103               M     clrw
+0033                      M D_LOOP
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0033   0803               M     movf table_counter, W
+0034   2???               M     call INPUT_LINE_CHAR ;??
+0035   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0036   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0037   2???               M         goto D_END
+0038   2???               M     call WR_DATA ;??
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0039   0A83               M     incf table_counter, F
+003A   2???               M     goto D_LOOP
+003B                      M D_END
+003B   2???           00096     goto KEYPAD_POLLING
+                      00097 
+003C                  00098 KEYPAD_POLLING
+003C   1C86           00099     btfss KEYPAD_P ;Check if keypad is pressed
+003D   2???           00100     goto $-1
+003E   0E06           00101     swapf PORTB,W     ;Read PortB<7:4> into W<3:0>, because KEYPAD pins corresponds to RB4-7
+003F   390F           00102     andlw 0x0F
+                      00103 
+0040   2???           00104     call COMPARISON_A
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0041   1C08           00105     btfss A_PRESSED, 0
+0042   2???           00106     goto NEXT
+0043   2???           00107     goto REALTIME
+                      00108 
+0044   2???           00109     call COMPARISON_B
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0045   1C09           00110     btfsS B_PRESSED, 0
+0046   2???           00111     goto NEXT
+0047   2???           00112     goto MAIN
+                      00113 
+0048                  00114 NEXT
+0048   2???           00115     call KEYPAD_INPUT_CHARACTERS ;Convert keypad values to LCD display values
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0049   2???           00116     call WR_DATA
+004A   1886           00117     btfsc KEYPAD_P     ;Wait until key is released
+004B   2???           00118     goto $-1
+                      00119 
+004C   2???           00120     goto KEYPAD_POLLING
+                      00121 
+004D   2???           00122     goto $
+                      00123 
+                      00124 ;***************************************
+                      00125 ; Look up table
+                      00126 ;***************************************
+                      00127 
+004E                  00128 WELCOME_MESSAGE
+004E   0782           00129                 addwf   PCL,F
+004F   344D 3461 3469 00130                 dt              "Main Menu", 0
        346E 3420 344D 
        3465 346E 3475 
        3400 
-                      00104 
-0038                  00105 INPUT_LINE_CHAR
-0038   0782           00106                 addwf   PCL,F
-0039   343E 3400      00107                 dt              ">",0
-                      00108 
-003B                  00109 KEYPAD_INPUT_CHARACTERS
-003B   0782           00110         addwf   PCL,F
-003C   3431 3432 3433 00111         dt      "123A456B789C*0#D"
+                      00131 
+0059                  00132 REALTIME_MESSAGE
+0059   0782           00133         addwf   PCL,F
+005A   3452 3465 3461 00134         dt      "Real Time", 0
+       346C 3420 3454 
+       3469 346D 3465 
+       3400 
+                      00135 
+0064                  00136 INPUT_LINE_CHAR
+0064   0782           00137                 addwf   PCL,F
+0065   343E 3400      00138                 dt              ">",0
+                      00139 
+0067                  00140 KEYPAD_INPUT_CHARACTERS
+0067   0782           00141         addwf   PCL,F
+0068   3431 3432 3433 00142         dt      "123A456B789C*0#D"
        3441 3434 3435 
        3436 3442 3437 
        3438 3439 3443 
        342A 3430 3423 
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE  4
-
-
-LOC  OBJECT CODE     LINE SOURCE TEXT
-  VALUE
-
        3444 
-                      00112 
-                      00113 ;****************************************
-                      00114 ; LCD Related Subroutines
-                      00115 ;****************************************
-004C                  00116 INITLCD
-004C   1283           00117     bcf STATUS, RP0
-004D   1588           00118     bsf LCD_E
-004E   2???           00119     call DELAY_5MS
-004F   2???           00120     call DELAY_5MS
-0050   2???           00121     call DELAY_5MS
-                      00122 
-                      00123     ;Ensure 8-bit mode first (no way to immediately guarantee 4-bit mode)
-                      00124         ; -> Send b'0011' 3 times
-0051   3033           00125         movlw   b'00110011' ;Last two bits are don't cares
-0052   2???           00126         call    WR_INST
-0053   3032           00127         movlw   b'00110010'
-0054   2???           00128         call    WR_INST
-                      00129 
-                      00130     ; 4 bits, 2 lines, 5x7 dots
-0055   3028           00131         movlw   b'00101000'
-0056   2???           00132         call    WR_INST
-                      00133 
-                      00134     ; display on/off
-0057   300F           00135         movlw   b'00001111'
-0058   2???           00136         call    WR_INST
-                      00137 
-                      00138         ; Entry mode
-0059   3006           00139         movlw   b'00000110' ;??
-005A   2???           00140         call    WR_INST
-                      00141 
-                      00142         ; Clear display
-005B   3001           00143         movlw   b'00000001'
-005C   2???           00144         call    WR_INST
-005D   0008           00145         return
-                      00146 
-                      00147 ;************************************
-                      00148 ; LCD CONTROL
-                      00149 ;************************************
-005E                  00150 CLEAR_LCD
-005E   3001           00151         movlw   B'00000001'
-005F   2???           00152         call    WR_INST
-0060   0008           00153     return
-                      00154 
-0061                  00155 SWITCH_LINES
-0061   30C0           00156     movlw       B'11000000'
-0062   2???           00157         call    WR_INST
-0063   0008           00158         return
-                      00159 
-                      00160 ;****************************************
-                      00161 ; Write command to LCD - Input : W , output : -
-                      00162 ; (Text P. 7-104)
-                      00163 ;****************************************
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE  5
+                      00143 
+                      00144 ;****************************************
+                      00145 ; LCD Related Subroutines
+                      00146 ;****************************************
+0078                  00147 INITLCD
+0078   1283           00148     bcf STATUS, RP0
+0079   1588           00149     bsf LCD_E
+007A   2???           00150     call DELAY_5MS
+007B   2???           00151     call DELAY_5MS
+007C   2???           00152     call DELAY_5MS
+                      00153 
+                      00154     ;Ensure 8-bit mode first (no way to immediately guarantee 4-bit mode)
+                      00155         ; -> Send b'0011' 3 times
+007D   3033           00156         movlw   b'00110011' ;Last two bits are don't cares
+007E   2???           00157         call    WR_INST
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE  6
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0064                  00164 WR_INST
-0064   1108           00165     bcf LCD_RS
-0065   00F2           00166     movwf com
-0066   39F0           00167     andlw 0xf0
-0067   0088           00168     movwf PORTD
-0068   1588           00169     bsf LCD_E
-0069   2???           00170     call DELAY_5MS
-006A   1188           00171     bcf LCD_E
-006B   0E72           00172     swapf com, W
-006C   39F0           00173     andlw 0xf0
-006D   0088           00174     movwf PORTD
-006E   1588           00175     bsf LCD_E
-006F   2???           00176     call DELAY_5MS
-0070   1188           00177     bcf LCD_E
-0071   2???           00178     call DELAY_5MS
-0072   0008           00179     return
-                      00180 
-                      00181 ;****************************************
-                      00182 ; Write data to LCD - Input : W , output : -
-                      00183 ;****************************************
-0073                  00184 WR_DATA
-0073   1508           00185     bsf LCD_RS ;Exactly the same as bsf PORTD, 2. RS - Register selected
-0074   00F4           00186     movwf dat ;Creates a copy of W into dat
-                      00187     ;movf dat, W ;?? Not sure why this line is needed, works without it
-0075   39F0           00188     andlw 0xf0 ;??
-0076   3E04           00189     addlw 4 ;?? Set RD2 to 1, and RD2 is RS. When RS is 1, you can write data to LCD, when RS is 0, you 
+007F   3032           00158         movlw   b'00110010'
+0080   2???           00159         call    WR_INST
+                      00160 
+                      00161     ; 4 bits, 2 lines, 5x7 dots
+0081   3028           00162         movlw   b'00101000'
+0082   2???           00163         call    WR_INST
+                      00164 
+                      00165     ; display on/off
+0083   300F           00166         movlw   b'00001111'
+0084   2???           00167         call    WR_INST
+                      00168 
+                      00169         ; Entry mode
+0085   3006           00170         movlw   b'00000110' ;??
+0086   2???           00171         call    WR_INST
+                      00172 
+                      00173         ; Clear display
+0087   3001           00174         movlw   b'00000001'
+0088   2???           00175         call    WR_INST
+0089   0008           00176         return
+                      00177 
+                      00178 ;************************************
+                      00179 ; LCD CONTROL
+                      00180 ;************************************
+008A                  00181 CLEAR_LCD
+008A   3001           00182         movlw   B'00000001'
+008B   2???           00183         call    WR_INST
+008C   0008           00184     return
+                      00185 
+008D                  00186 SWITCH_LINES
+008D   30C0           00187     movlw       B'11000000'
+008E   2???           00188         call    WR_INST
+008F   0008           00189         return
+                      00190 
+                      00191 ;****************************************
+                      00192 ; Write command to LCD - Input : W , output : -
+                      00193 ; (Text P. 7-104)
+                      00194 ;****************************************
+0090                  00195 WR_INST
+0090   1108           00196     bcf LCD_RS
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0091   0082           00197     movwf com
+0092   39F0           00198     andlw 0xf0
+0093   0088           00199     movwf PORTD
+0094   1588           00200     bsf LCD_E
+0095   2???           00201     call DELAY_5MS
+0096   1188           00202     bcf LCD_E
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0097   0E02           00203     swapf com, W
+0098   39F0           00204     andlw 0xf0
+0099   0088           00205     movwf PORTD
+009A   1588           00206     bsf LCD_E
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+009B   2???           00207     call DELAY_5MS
+009C   1188           00208     bcf LCD_E
+009D   2???           00209     call DELAY_5MS
+009E   0008           00210     return
+                      00211 
+                      00212 ;****************************************
+                      00213 ; Write data to LCD - Input : W , output : -
+                      00214 ;****************************************
+009F                  00215 WR_DATA
+009F   1508           00216     bsf LCD_RS ;Exactly the same as bsf PORTD, 2. RS - Register selected
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00A0   0084           00217     movwf dat ;Creates a copy of W into dat
+                      00218     ;movf dat, W ;?? Not sure why this line is needed, works without it
+00A1   39F0           00219     andlw 0xf0 ;??
+00A2   3E04           00220     addlw 4 ;?? Set RD2 to 1, and RD2 is RS. When RS is 1, you can write data to LCD, when RS is 0, you 
                             can write command it LCD
-0077   0088           00190     movwf PORTD
-0078   1588           00191     bsf LCD_E
-0079   2???           00192     call DELAY_5MS
-007A   0E74           00193     swapf dat,W ;Swaps the lower half and upper half of dat and store in W
-007B   39F0           00194         andlw 0xF0
-007C   3E04           00195         addlw 4
-007D   0088           00196         movwf PORTD
-007E   1588           00197         bsf LCD_E
-007F   2???           00198         call DELAY_5MS
-0080   1188           00199         bcf LCD_E
-0081   0008           00200         return
-                      00201 
-0082                  00202 DELAY_5MS ;~5ms
-0082   3014           00203     movlw d'20' ;20 seems to be arbitrary chosen. Less than 20 doesn't seem to work
-0083   00F1           00204     movwf lcd_d2
-0084                  00205 DELAY_5MS_LOOP
-                      00206     LCD_DELAY
-0084   30FF               M     movlw 0xff
-0085   00F0               M     movwf lcd_d1
-0086   0BF0               M     decfsz lcd_d1, f ; Decrement lcd_d1, if lcd_d1 = 0, then discard next instruction
-0087   2???               M     goto $-1
-0088   0BF1           00207     decfsz lcd_d2,f ;Calls LCD_DELAY 20 times
-0089   2???           00208     goto DELAY_5MS_LOOP
-008A   0008           00209     return
-                      00210 
-                      00211 ;***************************************
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE  6
+00A3   0088           00221     movwf PORTD
+00A4   1588           00222     bsf LCD_E
+00A5   2???           00223     call DELAY_5MS
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00A6   0E04           00224     swapf dat,W ;Swaps the lower half and upper half of dat and store in W
+00A7   39F0           00225         andlw 0xF0
+00A8   3E04           00226         addlw 4
+00A9   0088           00227         movwf PORTD
+00AA   1588           00228         bsf LCD_E
+00AB   2???           00229         call DELAY_5MS
+00AC   1188           00230         bcf LCD_E
+00AD   0008           00231         return
+                      00232 
+00AE                  00233 DELAY_5MS ;~5ms
+00AE   3014           00234     movlw d'20' ;20 seems to be arbitrary chosen. Less than 20 doesn't seem to work
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00AF   0081           00235     movwf lcd_d2
+00B0                  00236 DELAY_5MS_LOOP
+                      00237     LCD_DELAY
+00B0   30FF               M     movlw 0xff
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00B1   0080               M     movwf lcd_d1
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00B2   0B80               M     decfsz lcd_d1, f ; Decrement lcd_d1, if lcd_d1 = 0, then discard next instruction
+00B3   2???               M     goto $-1
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00B4   0B81           00238     decfsz lcd_d2,f ;Calls LCD_DELAY 20 times
+00B5   2???           00239     goto DELAY_5MS_LOOP
+00B6   0008           00240     return
+                      00241 
+                      00242 ;***************************************
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE  8
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00212 ; Delay 0.5s
-                      00213 ;***************************************
-008B                  00214 DELAY_500MS
-  0000                00215         local DELAY_500MS_0
-008B   3088           00216     movlw 0x88
-008C   00F5           00217     movwf COUNTH
-008D   30BD           00218     movlw 0xBD
-008E   00F6           00219     movwf COUNTM
-008F   3003           00220     movlw 0x03
-0090   00F7           00221     movwf COUNTL
-0091                  00222 DELAY_500MS_0
-0091   0BF5           00223     decfsz COUNTH, f
-0092   2???           00224     goto   $+2
-0093   0BF6           00225     decfsz COUNTM, f
-0094   2???           00226     goto   $+2
-0095   0BF7           00227     decfsz COUNTL, f
-0096   2???           00228     goto   DELAY_500MS_0
-0097   2???           00229     goto $+1
-0098   0000           00230     nop
-0099   0000           00231     nop
-009A   0008           00232     return
-                      00233 
-3F72                  00234     END
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE  7
+                      00243 ; Delay 0.5s
+                      00244 ;***************************************
+00B7                  00245 DELAY_500MS
+  0000                00246         local DELAY_500MS_0
+00B7   3088           00247     movlw 0x88
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00B8   0085           00248     movwf COUNTH
+00B9   30BD           00249     movlw 0xBD
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00BA   0086           00250     movwf COUNTM
+00BB   3003           00251     movlw 0x03
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00BC   0087           00252     movwf COUNTL
+00BD                  00253 DELAY_500MS_0
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00BD   0B85           00254     decfsz COUNTH, f
+00BE   2???           00255     goto   $+2
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00BF   0B86           00256     decfsz COUNTM, f
+00C0   2???           00257     goto   $+2
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00C1   0B87           00258     decfsz COUNTL, f
+00C2   2???           00259     goto   DELAY_500MS_0
+00C3   2???           00260     goto $+1
+00C4   0000           00261     nop
+00C5   0000           00262     nop
+00C6   0008           00263     return
+                      00264 
+00C7                  00265 COMPARISON_A
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00C7   008B           00266     movwf w_temp
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00C8   008A           00267     movwf comp_temp
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00C9   180A           00268     btfsc comp_temp, 0
+00CA   2???           00269     goto $+2
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00CB   1C8A           00270     btfss comp_temp, 1
+00CC   2???           00271     goto $+2
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00CD   190A           00272     btfsc comp_temp, 2
+00CE   2???           00273     goto $+2
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00CF   198A           00274     btfsc comp_temp, 3
+00D0   2???           00275     goto $+4
+00D1   0103           00276     clrw
+00D2   0701           00277     addwf 1, W
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00D3   0088           00278     movwf A_PRESSED
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00D4   080B           00279     movf w_temp, W
+00D5   0008           00280     return
+                      00281 
+00D6                  00282 COMPARISON_B
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00D6   008B           00283     movwf w_temp
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00D7   008A           00284     movwf comp_temp
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00D8   1C0A           00285     btfss comp_temp, 0
+00D9   2???           00286     goto $+2
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00DA   188A           00287     btfsc comp_temp, 1
+00DB   2???           00288     goto $+2
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00DC   190A           00289     btfsc comp_temp, 2
+00DD   2???           00290     goto $+2
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00DE   198A           00291     btfsc comp_temp, 3
+00DF   2???           00292     goto $+4
+00E0   0103           00293     clrw
+00E1   0701           00294     addwf 1, W
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00E2   0089           00295     movwf B_PRESSED
+Warning[219]: Invalid RAM location specified.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+00E3   080B           00296     movf w_temp, W
+00E4   0008           00297     return
+                      00298 
+3F72                  00299     END
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE 10
 
 
 SYMBOL TABLE
@@ -342,10 +544,12 @@ ADIF                              00000006
 ADON                              00000000
 ADRESH                            0000001E
 ADRESL                            0000009E
+A_PRESSED                         00001008
 BCLIE                             00000003
 BCLIF                             00000003
 BF                                00000000
 BRGH                              00000002
+B_PRESSED                         00001009
 C                                 00000000
 CCP1CON                           00000017
 CCP1IE                            00000002
@@ -376,24 +580,26 @@ CHS1                              00000004
 CHS2                              00000005
 CKE                               00000006
 CKP                               00000004
-CLEAR_LCD                         0000005E
-COUNTH                            00000075
-COUNTL                            00000077
-COUNTM                            00000076
-CREN                              00000004
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE  8
+CLEAR_LCD                         0000008A
+COMPARISON_A                      000000C7
+COMPARISON_B                      000000D6
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE 11
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+COUNTH                            00001005
+COUNTL                            00001007
+COUNTM                            00001006
+CREN                              00000004
 CSRC                              00000007
 D                                 00000005
 DATA_ADDRESS                      00000005
 DC                                00000001
-DELAY_500MS                       0000008B
-DELAY_5MS                         00000082
-DELAY_5MS_LOOP                    00000084
+DELAY_500MS                       000000B7
+DELAY_5MS                         000000AE
+DELAY_5MS_LOOP                    000000B0
 DISPLAY                           
 D_A                               00000005
 D_NOT_A                           00000005
@@ -421,31 +627,32 @@ I2C_STOP                          00000004
 IBF                               00000007
 IBOV                              00000005
 INDF                              00000000
-INITLCD                           0000004C
-INPUT_LINE_CHAR                   00000038
+INITLCD                           00000078
+INPUT_LINE_CHAR                   00000064
 INTCON                            0000000B
 INTE                              00000004
 INTEDG                            00000006
 INTF                              00000001
 IRP                               00000007
-KEYPAD_INPUT_CHARACTERS           0000003B
+KEYPAD_INPUT_CHARACTERS           00000067
 KEYPAD_P                          PORTB,1
-KEYPAD_POLLING                    00000023
+KEYPAD_POLLING                    0000003C
 LCD_DELAY                         
 LCD_E                             PORTD,3
 LCD_RS                            PORTD,2
 MAIN                              0000000E
 MAIN_INIT                         00000001
-NOT_A                             00000005
-NOT_ADDRESS                       00000005
-NOT_BO                            00000000
-NOT_BOR                           00000000
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE  9
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE 12
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+NEXT                              00000048
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
 NOT_DONE                          00000002
 NOT_PD                            00000003
 NOT_POR                           00000001
@@ -494,17 +701,17 @@ RA3                               00000003
 RA4                               00000004
 RA5                               00000005
 RB0                               00000000
-RB1                               00000001
-RB2                               00000002
-RB3                               00000003
-RB4                               00000004
-RB5                               00000005
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE 10
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE 13
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
 RB6                               00000006
 RB7                               00000007
 RBIE                              00000003
@@ -538,6 +745,8 @@ RE0                               00000000
 RE1                               00000001
 RE2                               00000002
 READ_WRITE                        00000002
+REALTIME                          00000025
+REALTIME_MESSAGE                  00000059
 RP0                               00000005
 RP1                               00000006
 RSEN                              00000001
@@ -551,6 +760,12 @@ SMP                               00000007
 SPBRG                             00000099
 SPEN                              00000007
 SREN                              00000005
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE 14
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 SSPADD                            00000093
 SSPBUF                            00000013
 SSPCON                            00000014
@@ -558,12 +773,6 @@ SSPCON2                           00000091
 SSPEN                             00000005
 SSPIE                             00000003
 SSPIF                             00000003
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE 11
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 SSPM0                             00000000
 SSPM1                             00000001
 SSPM2                             00000002
@@ -571,7 +780,7 @@ SSPM3                             00000003
 SSPOV                             00000006
 SSPSTAT                           00000094
 STATUS                            00000003
-SWITCH_LINES                      00000061
+SWITCH_LINES                      0000008D
 SYNC                              00000004
 T0CS                              00000005
 T0IE                              00000005
@@ -610,6 +819,12 @@ TRISA1                            00000001
 TRISA2                            00000002
 TRISA3                            00000003
 TRISA4                            00000004
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE 15
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 TRISA5                            00000005
 TRISB                             00000086
 TRISB0                            00000000
@@ -617,12 +832,6 @@ TRISB1                            00000001
 TRISB2                            00000002
 TRISB3                            00000003
 TRISB4                            00000004
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE 12
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 TRISB5                            00000005
 TRISB6                            00000006
 TRISB7                            00000007
@@ -661,27 +870,35 @@ TXSTA                             00000098
 UA                                00000001
 W                                 00000000
 WCOL                              00000007
-WELCOME_MESSAGE                   0000002D
+WELCOME_MESSAGE                   0000004E
 WR                                00000001
 WREN                              00000002
 WRERR                             00000003
-WR_DATA                           00000073
-WR_INST                           00000064
+WR_DATA                           0000009F
+WR_INST                           00000090
 Z                                 00000002
-_.org_0_0024                      00000024
-_.org_0_002A                      0000002A
-_.org_0_002C                      0000002C
-_.org_0_0087                      00000087
-_.org_0_0092                      00000092
-_.org_0_0094                      00000094
-_.org_0_0097                      00000097
-_BODEN_OFF                        00003FBF
-MPASM  5.48                          MAIN.ASM   2-3-2013  1:32:27         PAGE 13
+_.org_0_003D                      0000003D
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE 16
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+_.org_0_004B                      0000004B
+_.org_0_004D                      0000004D
+_.org_0_00B3                      000000B3
+_.org_0_00BE                      000000BE
+_.org_0_00C0                      000000C0
+_.org_0_00C3                      000000C3
+_.org_0_00CA                      000000CA
+_.org_0_00CC                      000000CC
+_.org_0_00CE                      000000CE
+_.org_0_00D0                      000000D0
+_.org_0_00D9                      000000D9
+_.org_0_00DB                      000000DB
+_.org_0_00DD                      000000DD
+_.org_0_00DF                      000000DF
+_BODEN_OFF                        00003FBF
 _BODEN_ON                         00003FFF
 _BOREN_OFF                        00003FBF
 _BOREN_ON                         00003FFF
@@ -720,14 +937,22 @@ _WRT_OFF                          00003DFF
 _WRT_ON                           00003FFF
 _XT_OSC                           00003FFD
 __16F877                          00000001
-com                               00000072
-dat                               00000074
-lcd_d1                            00000070
-lcd_d2                            00000071
-table_counter                     00000073
+MPASM  5.48                          MAIN.ASM   2-3-2013  4:26:59         PAGE 17
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+com                               00001002
+comp_temp                         0000100A
+dat                               00001004
+lcd_d1                            00001000
+lcd_d2                            00001001
+table_counter                     00001003
+w_temp                            0000100B
 
 Errors   :     0
-Warnings :     0 reported,     0 suppressed
-Messages :     4 reported,     0 suppressed
+Warnings :    44 reported,     0 suppressed
+Messages :    48 reported,     0 suppressed
 
 
