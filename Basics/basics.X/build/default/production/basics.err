@@ -1,17 +1,18 @@
-Error[113]   C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 29 : Symbol not previously defined (INFT  )
-Error[113]   C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 30 : Symbol not previously defined (?1)
-Error[112]   C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 30 : Missing operator
-Error[113]   C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 31 : Symbol not previously defined (INFT  )
-Error[113]   C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 32 : Symbol not previously defined (W         )
-Warning[207] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 34 : Found label after column 1. (call     )
-Error[122]   C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 34 : Illegal opcode (KEYPAD_INPUT_CHARACTERS)
-Warning[207] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 35 : Found label after column 1. (call     )
-Error[122]   C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 35 : Illegal opcode (WR_DATA     )
-Warning[207] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 36 : Found label after column 1. (retfie )
-Error[122]   C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 36 : Illegal opcode ( )
-Warning[207] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 71 : Found label after column 1. (movlw  b?11111111?)
-Warning[207] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 72 : Found label after column 1. (movwf  TRISB )
-Error[122]   C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 72 : Illegal opcode ( )
-Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 77 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 80 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 79 : Register in operand not in bank 0.  Ensure that bank bits are correct.
 Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 81 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 82 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 83 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 319 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 321 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 328 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 330 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 337 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 339 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[305] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 344 : Using default destination of 1 (file).
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 344 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[305] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 346 : Using default destination of 1 (file).
+Message[305] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 351 : Using default destination of 1 (file).
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 351 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[305] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 353 : Using default destination of 1 (file).
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 358 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\BASICS\BASICS.X\BASICS.ASM 365 : Register in operand not in bank 0.  Ensure that bank bits are correct.

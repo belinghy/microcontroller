@@ -3,7 +3,7 @@
     __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
 
 ; Declare variables
-    cblock 0x20
+    cblock 0x70
         lcd_d1 ;Used for LCD_DELAY macro
         lcd_d2 ;Used for DELAY_5MS subroutine
         com ;For writing instruction to LCD
@@ -187,9 +187,11 @@ INITLCD
 	call	WR_INST
 	movlw	b'00110010'
 	call	WR_INST
+
     ; 4 bits, 2 lines, 5x7 dots
 	movlw	b'00101000'
 	call	WR_INST
+
     ; display on/off
 	movlw	b'00001111'
 	call	WR_INST
@@ -374,9 +376,6 @@ CLEAR_KEYS
     clrf B_PRESSED
     clrf C_PRESSED
     clrf D_PRESSED
-    clrf FOUR_PRESSED
-    CLRF THREE_PRESSED
-    CLRF STAR_PRESSED
     return
 
         END
