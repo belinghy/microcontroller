@@ -1,6 +1,6 @@
 list p=16f877                 ; list directive to define processor
       #include <p16f877.inc>        ; processor specific variable definitions
-      __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_ON
+      __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
 
 
 	;Declare unbanked variables (at 0x70 and on)

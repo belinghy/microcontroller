@@ -1,6 +1,6 @@
       list p=16f877                 ; list directive to define processor
       #include <p16f877.inc>        ; processor specific variable definitions
-      __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_ON
+      __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
 
 
 	cblock	0x70
@@ -112,7 +112,7 @@ Welcome_Msg
 
 Alphabet
 		addwf	PCL,F
-		dt		"     Testing Two     ",0
+		dt		"Testing Two",0
 
 ;***************************************
 ; LCD control
@@ -168,7 +168,7 @@ InitLCD
 
 	;Ensure 8-bit mode first (no way to immediately guarantee 4-bit mode)
 	; -> Send b'0011' 3 times
-	movlw	b'00110011'
+	movlw	b'00110011' ;Last two bits are don't cares
 	call	WR_INS
 	movlw	b'00110010'
 	call	WR_INS
@@ -223,7 +223,7 @@ WR_INS
 WR_DATA
 	bsf		RS
 	movwf	dat
-	movf	dat,w
+	movf	dat,W
 	andlw	0xF0
 	addlw	4
 	movwf	PORTD

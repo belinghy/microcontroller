@@ -1,4 +1,5 @@
-Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\LCD\LCD.X\LCD.ASM 63 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\LCD\LCD.X\LCD.ASM 65 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\LCD\LCD.X\LCD.ASM 66 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\LCD\LCD.X\LCD.ASM 67 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\LCD\LCD.X\LCD.ASM 57 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\LCD\LCD.X\LCD.ASM 59 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\LCD\LCD.X\LCD.ASM 60 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\LCD\LCD.X\LCD.ASM 61 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Warning[205] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\LCD\LCD.X\LCD.ASM 191 : Found directive in column 1. (END)

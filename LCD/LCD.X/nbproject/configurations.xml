@@ -57,6 +57,7 @@
       <MPASMWIN-LD>
       </MPASMWIN-LD>
       <PICkit2PlatformTool>
+        <property key="pk2settings.setvddvoltage" value="5.00"/>
       </PICkit2PlatformTool>
       <mpasmsuite>
       </mpasmsuite>

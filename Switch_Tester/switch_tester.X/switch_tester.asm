@@ -1,5 +1,5 @@
     list P=PIC16F877, F=INHX8M, C=160, N=80, ST=OFF, MM=OFF, R=DEC
-	include "P16F877.INC"
+	#include "p16f877.inc"
 	__config ( _CP_OFF & _WDT_OFF & _BODEN_OFF & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _LVP_OFF & _DEBUG_OFF & _CPD_OFF )
 	errorlevel -302		;ignore error when storing to bank1
 

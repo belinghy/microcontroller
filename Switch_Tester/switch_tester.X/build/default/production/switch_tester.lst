@@ -1,11 +1,11 @@
-MPASM  5.48                 SWITCH_TESTER.ASM   1-25-2013  21:42:43         PAGE  1
+MPASM  5.48                 SWITCH_TESTER.ASM   2-2-2013  14:56:04         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
                       00001     list P=PIC16F877, F=INHX8M, C=160, N=80, ST=OFF, MM=OFF, R=DEC
-                      00002         include "P16F877.INC"
+                      00002         #include "p16f877.inc"
                       00001         LIST
                       00002 
                       00003 ;==========================================================================
@@ -78,7 +78,7 @@ Warning[203]: Found opcode in column 1. (goto)
 001E   3001           00061         movlw   b'00000001'
 001F   0089           00062         movwf   TRISE
                       00063 
-MPASM  5.48                 SWITCH_TESTER.ASM   1-25-2013  21:42:43         PAGE  2
+MPASM  5.48                 SWITCH_TESTER.ASM   2-2-2013  14:56:04         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -158,7 +158,7 @@ Warning[203]: Found opcode in column 1. (return)
 0040                  00132 clear_LED
                       00133 
 0040   0186           00134         clrf PORTB
-MPASM  5.48                 SWITCH_TESTER.ASM   1-25-2013  21:42:43         PAGE  3
+MPASM  5.48                 SWITCH_TESTER.ASM   2-2-2013  14:56:04         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT

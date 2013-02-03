@@ -1,0 +1,21 @@
+Warning[207] ..\MAIN.ASM 9 : Found label after column 1. (COUNTH)
+Warning[207] ..\MAIN.ASM 10 : Found label after column 1. (COUNTM)
+Warning[207] ..\MAIN.ASM 11 : Found label after column 1. (COUNTL)
+Message[302] ..\MAIN.ASM 26 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] ..\MAIN.ASM 27 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] ..\MAIN.ASM 28 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] ..\MAIN.ASM 29 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] ..\MAIN.ASM 32 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] ..\MAIN.ASM 33 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[305] ..\RTC_MACROS.INC 16 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 19 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 22 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 25 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 28 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 31 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 16 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 19 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 22 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 25 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 28 : Using default destination of 1 (file).
+Message[305] ..\RTC_MACROS.INC 31 : Using default destination of 1 (file).

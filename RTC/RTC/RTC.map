@@ -1,0 +1,153 @@
+MPLINK 4.35, Linker
+Linker Map File - Created Tue Jun 01 13:03:30 2010
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000002
+                   .org_1       code   0x000100    program   0x00020c
+                    .code       code   0x000206    program   0x000278
+                   .cinit    romdata   0x002000    program   0x000004
+      .config_2007_MAIN.O       code   0x002007    program   0x000002
+               .udata_shr      udata   0x000071       data   0x000008
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x000000      
+                            0x000100    0x000341      
+                            0x002000    0x002001      
+                            0x002007    0x002007      
+            582 out of 8453 program addresses used, program memory utilization is 6%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                   ClrLCD   0x000218    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                  InitLCD   0x000206    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                 LLD_LOOP   0x00023d    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                     OneS   0x0001f6    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                   RD_END   0x0002da    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                   RD_ERR   0x0002d9    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                    R_END   0x00033c    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                  WR_DATA   0x00022a    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                   WR_END   0x00028b    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                   WR_ERR   0x00028a    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                   WR_INS   0x00021b    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                    W_END   0x000312    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0010   0x000254    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0016   0x00025a    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_001E   0x000262    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_002E   0x000272    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_003A   0x000240    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+              _.code_003E   0x000282    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_004B   0x00028f    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0051   0x000295    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0059   0x00029d    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0069   0x0002ad    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0074   0x0002b8    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_007C   0x0002c0    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0087   0x0002cb    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0093   0x0002d7    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_009A   0x0002de    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00AE   0x0002f2    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00B6   0x0002fa    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00C6   0x00030a    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00D2   0x000316    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00D8   0x00031c    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00E0   0x000324    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00EB   0x00032f    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00F7   0x00033b    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00FC   0x000340    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+             _.org_1_01FD   0x0001fd    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+             _.org_1_01FF   0x0001ff    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+             _.org_1_0202   0x000202    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                 _0OneS_0   0x0001fc    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+         i2c_common_setup   0x000244    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                     init   0x000100    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+             lcdLongDelay   0x00023b    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                 p2p_read   0x000318    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                p2p_write   0x0002ee    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                 read_rtc   0x000291    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              rtc_convert   0x0002e0    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+             set_rtc_time   0x00018e    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                 show_RTC   0x00012e    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                write_rtc   0x000256    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                   COUNTH   0x000076       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                   COUNTL   0x000078       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                   COUNTM   0x000077       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                      com   0x000074       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                      dat   0x000075       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                   lcd_d1   0x000072       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                   lcd_d2   0x000073       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                  lcd_tmp   0x000071       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                     init   0x000100    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                 show_RTC   0x00012e    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+             set_rtc_time   0x00018e    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                     OneS   0x0001f6    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                 _0OneS_0   0x0001fc    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+             _.org_1_01FD   0x0001fd    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+             _.org_1_01FF   0x0001ff    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+             _.org_1_0202   0x000202    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                  InitLCD   0x000206    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                   ClrLCD   0x000218    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                   WR_INS   0x00021b    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                  WR_DATA   0x00022a    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+             lcdLongDelay   0x00023b    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                 LLD_LOOP   0x00023d    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+              _.code_003A   0x000240    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+         i2c_common_setup   0x000244    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0010   0x000254    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                write_rtc   0x000256    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0016   0x00025a    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_001E   0x000262    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_002E   0x000272    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_003E   0x000282    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                   WR_ERR   0x00028a    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                   WR_END   0x00028b    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_004B   0x00028f    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                 read_rtc   0x000291    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0051   0x000295    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0059   0x00029d    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0069   0x0002ad    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0074   0x0002b8    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_007C   0x0002c0    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0087   0x0002cb    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_0093   0x0002d7    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                   RD_ERR   0x0002d9    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                   RD_END   0x0002da    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_009A   0x0002de    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              rtc_convert   0x0002e0    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                p2p_write   0x0002ee    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00AE   0x0002f2    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00B6   0x0002fa    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00C6   0x00030a    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                    W_END   0x000312    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00D2   0x000316    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                 p2p_read   0x000318    program     extern C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00D8   0x00031c    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00E0   0x000324    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00EB   0x00032f    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00F7   0x00033b    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                    R_END   0x00033c    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+              _.code_00FC   0x000340    program     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\i2c_common.asm
+                  lcd_tmp   0x000071       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                   lcd_d1   0x000072       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                   lcd_d2   0x000073       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                      com   0x000074       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                      dat   0x000075       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\lcd.asm
+                   COUNTH   0x000076       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                   COUNTM   0x000077       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+                   COUNTL   0x000078       data     static C:\Users\Robert_Ada\Desktop\Current Work\Lab Manual\Laboratory_Exercise_4_RTC\RTC\main.asm
+
+

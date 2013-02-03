@@ -1,4 +1,4 @@
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE  1
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -16,8 +16,8 @@ Warning[205]: Found directive in column 1. (list)
                       00007 ;==========================================================================
                       00008 
                       00540         LIST
-2007   3FF2           00003       __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_O
-                            N
+2007   3F72           00003       __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_O
+                            FF
                       00004 
                       00005 
                       00006         ;Declare unbanked variables (at 0x70 and on)
@@ -57,7 +57,7 @@ Warning[207]: Found label after column 1. (E)
 0002   1683           00038          bsf       STATUS,RP0     ; select bank 1
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
 0003   0185           00039          clrf      TRISA          ; All port A is output
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE  2
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -116,7 +116,7 @@ Message[302]: Register in operand not in bank 0.  Ensure that bank bits are corr
                       00082 
                       00083         ;Ensure 8-bit mode first (no way to immediately guarantee 4-bit mode)
                       00084         ; -> Send b'0011' 3 times
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE  3
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -175,7 +175,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00127     LCD_DELAY
 004C   30FF               M         movlw   0xFF
 004D   00F1               M         movwf   lcd_d1
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE  4
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE  4
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -217,8 +217,8 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0064   0008           00151     return
                       00152 
                       00153 
-3FF2                  00154         END
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE  5
+3F72                  00154         END
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE  5
 
 
 SYMBOL TABLE
@@ -277,7 +277,7 @@ CSRC                              00000007
 ClkLCD                            0000004C
 ClrLCD                            00000047
 D                                 00000005
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE  6
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE  6
 
 
 SYMBOL TABLE
@@ -336,7 +336,7 @@ NOT_TO                            00000004
 NOT_TX8                           00000006
 NOT_W                             00000002
 NOT_WRITE                         00000002
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE  7
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE  7
 
 
 SYMBOL TABLE
@@ -395,7 +395,7 @@ RC2                               00000002
 RC3                               00000003
 RC4                               00000004
 RC5                               00000005
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE  8
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE  8
 
 
 SYMBOL TABLE
@@ -454,7 +454,7 @@ SSPSTAT                           00000094
 STATUS                            00000003
 SYNC                              00000004
 T0CS                              00000005
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE  9
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE  9
 
 
 SYMBOL TABLE
@@ -513,7 +513,7 @@ TRISC2                            00000002
 TRISC3                            00000003
 TRISC4                            00000004
 TRISC5                            00000005
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE 10
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE 10
 
 
 SYMBOL TABLE
@@ -572,7 +572,7 @@ _CP_UPPER_256                     00002FEF
 _DEBUG_OFF                        00003FFF
 _DEBUG_ON                         000037FF
 _DEVID1                           00002006
-MPASM  5.48                        KEYPAD.ASM   1-29-2013  15:12:22         PAGE 11
+MPASM  5.48                        KEYPAD.ASM   2-2-2013  12:40:03         PAGE 11
 
 
 SYMBOL TABLE
