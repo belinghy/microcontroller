@@ -2,9 +2,8 @@
     #include <p16f877.inc>
     __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
 
-
 ; Declare variables
-    cblock 0x1000
+    cblock 0x70
         lcd_d1 ;Used for LCD_DELAY macro
         lcd_d2 ;Used for DELAY_5MS subroutine
         com ;For writing instruction to LCD
@@ -13,10 +12,12 @@
         COUNTH ;Used for DELAY_500MS subroutine
         COUNTM ;(see above)
         COUNTL ;(see above)
-        A_PRESSED
-        B_PRESSED
         comp_temp
         w_temp
+        A_PRESSED
+        B_PRESSED
+        C_PRESSED
+        D_PRESSED
     endc
 
 ; Declare constants for pin assignment (LCD on PORTD, see Lab 2 on Portal)
@@ -80,6 +81,7 @@ MAIN_INIT
 ; Main Program
 ;*************************************
 MAIN
+    call CLEAR_KEYS
     call CLEAR_LCD
     DISPLAY WELCOME_MESSAGE
 
@@ -88,8 +90,18 @@ MAIN
     goto KEYPAD_POLLING
 
 REALTIME
+    call CLEAR_KEYS
     call CLEAR_LCD
     DISPLAY REALTIME_MESSAGE
+
+    call SWITCH_LINES
+    DISPLAY INPUT_LINE_CHAR
+    goto KEYPAD_POLLING
+
+REPORT
+    call CLEAR_KEYS
+    call CLEAR_LCD
+    DISPLAY REPORT_MESSAGE
 
     call SWITCH_LINES
     DISPLAY INPUT_LINE_CHAR
@@ -101,23 +113,26 @@ KEYPAD_POLLING
     swapf PORTB,W     ;Read PortB<7:4> into W<3:0>, because KEYPAD pins corresponds to RB4-7
     andlw 0x0F
 
-    call COMPARISON_A
+    call COMPARISON
     btfss A_PRESSED, 0
-    goto NEXT
-    goto REALTIME
-
-    call COMPARISON_B
-    btfsS B_PRESSED, 0
-    goto NEXT
+    goto $+2
     goto MAIN
+    btfss B_PRESSED, 0
+    goto $+2
+    goto REALTIME
+    btfss C_PRESSED, 0
+    goto $+2
+    goto REPORT
+    goto NEXT
+
 
 NEXT
     call KEYPAD_INPUT_CHARACTERS ;Convert keypad values to LCD display values
     call WR_DATA
     btfsc KEYPAD_P     ;Wait until key is released
     goto $-1
-
     goto KEYPAD_POLLING
+
 
     goto $
 
@@ -136,6 +151,9 @@ REALTIME_MESSAGE
 INPUT_LINE_CHAR
 		addwf	PCL,F
 		dt		">",0
+REPORT_MESSAGE
+        addwf   PCL, F
+        dt      "Report", 0
 
 KEYPAD_INPUT_CHARACTERS
         addwf   PCL,F
@@ -262,38 +280,33 @@ DELAY_500MS_0
     nop
     return
 
-COMPARISON_A
+COMPARISON
     movwf w_temp
     movwf comp_temp
-    btfsc comp_temp, 0
-    goto $+2
-    btfss comp_temp, 1
-    goto $+2
-    btfsc comp_temp, 2
-    goto $+2
-    btfsc comp_temp, 3
-    goto $+4
     clrw
-    addwf 1, W
-    movwf A_PRESSED
+    addlw 1
+    btfsc comp_temp, 2
+    goto $+7
+    btfsc comp_temp, 3
+    goto $+3
+    addwf A_PRESSED, F
+    goto END_COMPARISON
+    addwf C_PRESSED, F
+    goto END_COMPARISON
+    btfsc comp_temp, 3
+    goto $+3
+    addwf B_PRESSED, F
+    goto END_COMPARISON
+    addwf D_PRESSED, F
+END_COMPARISON
     movf w_temp, W
     return
 
-COMPARISON_B
-    movwf w_temp
-    movwf comp_temp
-    btfss comp_temp, 0
-    goto $+2
-    btfsc comp_temp, 1
-    goto $+2
-    btfsc comp_temp, 2
-    goto $+2
-    btfsc comp_temp, 3
-    goto $+4
-    clrw
-    addwf 1, W
-    movwf B_PRESSED
-    movf w_temp, W
+CLEAR_KEYS
+    clrf A_PRESSED
+    clrf B_PRESSED
+    clrf C_PRESSED
+    clrf D_PRESSED
     return
 
-    END
+        END
