@@ -179,7 +179,7 @@ WR_DATA
 	bcf E
 	return
 
-LCDLONGDELAY
+LCDLONGDELAY ;~5ms
     movlw d'20' ;20 seems to be arbitrary chosen. Less than 20 doesn't seem to work
     movwf lcd_d2
 LLD_LOOP

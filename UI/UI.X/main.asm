@@ -4,19 +4,20 @@
 
 ; Declare variables
     cblock 0x70
-        lcd_d1
-        lcd_d2
-        com
-        table_counter
-        dat
-        COUNTH
-        COUNTM
-        COUNTL
+        lcd_d1 ;Used for LCD_DELAY macro
+        lcd_d2 ;Used for DELAY_5MS subroutine
+        com ;For writing instruction to LCD
+        table_counter ;Used for displaying characters on LCD
+        dat ;For writing data to LCD
+        COUNTH ;Used for DELAY_500MS subroutine
+        COUNTM ;(see above)
+        COUNTL ;(see above)
     endc
 
 ; Declare constants for pin assignment (LCD on PORTD, see Lab 2 on Portal)
-    #define	RS 	PORTD,2
-	#define	E 	PORTD,3
+    #define	LCD_RS 	PORTD,2
+	#define	LCD_E 	PORTD,3
+    #define KEYPAD_P PORTB,1
 
     ORG 0x0000
     goto MAIN_INIT
@@ -77,7 +78,19 @@ MAIN
     DISPLAY WELCOME_MESSAGE
 
     call SWITCH_LINES
-    DISPLAY ALPHABET
+    DISPLAY INPUT_LINE_CHAR
+
+KEYPAD_POLLING
+    btfss KEYPAD_P ;Check if keypad is pressed
+    goto $-1
+    swapf PORTB,W     ;Read PortB<7:4> into W<3:0>, because KEYPAD pins corresponds to RB4-7
+    andlw 0x0F
+    call KEYPAD_INPUT_CHARACTERS ;Convert keypad values to LCD display values
+    call WR_DATA
+    btfsc KEYPAD_P     ;Wait until key is released
+    goto $-1
+    goto KEYPAD_POLLING
+
 
     goto $
 
@@ -89,23 +102,27 @@ WELCOME_MESSAGE
 		addwf	PCL,F
 		dt		"Main Menu", 0
 
-ALPHABET
+INPUT_LINE_CHAR
 		addwf	PCL,F
 		dt		">",0
+
+KEYPAD_INPUT_CHARACTERS
+        addwf   PCL,F
+        dt      "123A456B789C*0#D"
 
 ;****************************************
 ; LCD Related Subroutines
 ;****************************************
 INITLCD
     bcf STATUS, RP0
-    bsf E
-    call LCDLONGDELAY
-    call LCDLONGDELAY
-    call LCDLONGDELAY
+    bsf LCD_E
+    call DELAY_5MS
+    call DELAY_5MS
+    call DELAY_5MS
 
     ;Ensure 8-bit mode first (no way to immediately guarantee 4-bit mode)
 	; -> Send b'0011' 3 times
-	movlw	b'00110011'
+	movlw	b'00110011' ;Last two bits are don't cares
 	call	WR_INST
 	movlw	b'00110010'
 	call	WR_INST
@@ -145,70 +162,70 @@ SWITCH_LINES
 ; (Text P. 7-104)
 ;****************************************
 WR_INST
-    bcf RS
+    bcf LCD_RS
     movwf com
     andlw 0xf0
     movwf PORTD
-    bsf E
-    call LCDLONGDELAY
-    bcf E
+    bsf LCD_E
+    call DELAY_5MS
+    bcf LCD_E
     swapf com, W
     andlw 0xf0
     movwf PORTD
-    bsf E
-    call LCDLONGDELAY
-    bcf E
-    call LCDLONGDELAY
+    bsf LCD_E
+    call DELAY_5MS
+    bcf LCD_E
+    call DELAY_5MS
     return
 
 ;****************************************
 ; Write data to LCD - Input : W , output : -
 ;****************************************
 WR_DATA
-    bsf RS ;Exactly the same as bsf PORTD, 2. RS - Register selected
+    bsf LCD_RS ;Exactly the same as bsf PORTD, 2. RS - Register selected
     movwf dat ;Creates a copy of W into dat
     ;movf dat, W ;?? Not sure why this line is needed, works without it
     andlw 0xf0 ;??
     addlw 4 ;?? Set RD2 to 1, and RD2 is RS. When RS is 1, you can write data to LCD, when RS is 0, you can write command it LCD
     movwf PORTD
-    bsf E
-    call LCDLONGDELAY
+    bsf LCD_E
+    call DELAY_5MS
     swapf dat,W ;Swaps the lower half and upper half of dat and store in W
 	andlw 0xF0
 	addlw 4
 	movwf PORTD
-	bsf E
-	call LCDLONGDELAY
-	bcf E
+	bsf LCD_E
+	call DELAY_5MS
+	bcf LCD_E
 	return
 
-LCDLONGDELAY
+DELAY_5MS ;~5ms
     movlw d'20' ;20 seems to be arbitrary chosen. Less than 20 doesn't seem to work
     movwf lcd_d2
-LLD_LOOP
+DELAY_5MS_LOOP
     LCD_DELAY
     decfsz lcd_d2,f ;Calls LCD_DELAY 20 times
-    goto LLD_LOOP
+    goto DELAY_5MS_LOOP
     return
 
 ;***************************************
 ; Delay 0.5s
 ;***************************************
-SHIFTDELAY
-	local SHIFTDELAY_0
+DELAY_500MS
+	local DELAY_500MS_0
     movlw 0x88
     movwf COUNTH
     movlw 0xBD
     movwf COUNTM
     movlw 0x03
     movwf COUNTL
-SHIFTDELAY_0
+DELAY_500MS_0
     decfsz COUNTH, f
     goto   $+2
     decfsz COUNTM, f
     goto   $+2
     decfsz COUNTL, f
-    goto   SHIFTDELAY_0
+    goto   DELAY_500MS_0
     goto $+1
     nop
     nop
