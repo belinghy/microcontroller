@@ -1,6 +1,6 @@
     list p=16f877
     #include <p16f877.inc>
-    __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
+    __CONFIG _CP_OFF & _WDT_OFF & _BODEN_OFF & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
 
 ; Declare variables
     cblock 0x20
@@ -13,23 +13,9 @@
         COUNTM ;(see above)
         COUNTL ;(see above)
         comp_temp
-        w_temp
-        A_PRESSED
-        B_PRESSED
-        C_PRESSED
-        D_PRESSED
-        ONE_PRESSED
-        TWO_PRESSED
-        THREE_PRESSED
-        FOUR_PRESSED
-        FIVE_PRESSED
-        SIX_PRESSED
-        SEVEN_PRESSED
-        EIGHT_PRESSED
-        NINE_PRESSED
-        ZERO_PRESSED
-        POUND_PRESSED
-        STAR_PRESSED
+        KEY_PRESSED_ONE
+        KEY_PRESSED_TWO
+        CUR_SCREEN
     endc
 
 ; Declare constants for pin assignment (LCD on PORTD, see Lab 2 on Portal)
@@ -87,21 +73,16 @@ MAIN_INIT
     clrf PORTB
     clrf PORTC
     clrf PORTD
+    clrf CUR_SCREEN
+    call CLEAR_KEYS
     call INITLCD
 
 ;*************************************
 ; Main Program
 ;*************************************
-MAIN
-    call CLEAR_KEYS
-    call CLEAR_LCD
-    DISPLAY WELCOME_MESSAGE
-
-    call SWITCH_LINES
-    DISPLAY INPUT_LINE_CHAR
-    goto KEYPAD_POLLING
-
 REALTIME
+    movlw b'00000000'
+    movwf CUR_SCREEN
     call CLEAR_KEYS
     call CLEAR_LCD
     DISPLAY REALTIME_MESSAGE
@@ -110,13 +91,69 @@ REALTIME
     DISPLAY INPUT_LINE_CHAR
     goto KEYPAD_POLLING
 
-REPORT
+NEW_OPERATION_DISPLAY
+    call CLEAR_KEYS
+    call CLEAR_LCD
+    DISPLAY NEW_OPERATION_MESSAGE
+    call USER_DELAY
+NOS_2
+    movlw b'00000100'
+    movwf CUR_SCREEN
+    call CLEAR_KEYS
+    call CLEAR_LCD
+    DISPLAY MAIN_MESSAGE_ONE
+    call SWITCH_LINES
+    DISPLAY INPUT_LINE_CHAR
+    goto KEYPAD_POLLING
+NOS_3
+    movlw b'00001000'
+    movwf CUR_SCREEN
+    call CLEAR_KEYS
+    call CLEAR_LCD
+    DISPLAY MAIN_MESSAGE_TWO
+    call SWITCH_LINES
+    DISPLAY INPUT_LINE_CHAR
+
+    goto KEYPAD_POLLING
+
+REPORT_DISPLAY
     call CLEAR_KEYS
     call CLEAR_LCD
     DISPLAY REPORT_MESSAGE
-
+    call USER_DELAY
+R_2
+    movlw b'00000001'
+    movwf CUR_SCREEN
+    call CLEAR_KEYS
+    call CLEAR_LCD
+    DISPLAY OPERATION_TIME
     call SWITCH_LINES
-    DISPLAY INPUT_LINE_CHAR
+    goto KEYPAD_POLLING
+R_3
+    call CLEAR_KEYS
+    movlw b'00000010'
+    movwf CUR_SCREEN
+    call CLEAR_LCD
+    DISPLAY INPUT_PATTERNS
+    call SWITCH_LINES
+    goto KEYPAD_POLLING
+
+SCR_FORWARD
+    call CLEAR_KEYS
+    btfss CUR_SCREEN, 3
+    goto $+2
+    goto NOS_2
+    goto KEYPAD_POLLING
+SCR_BACKWARD
+    btfss CUR_SCREEN, 0
+    goto $+2
+    goto R_2
+    btfss CUR_SCREEN, 1
+    goto $+2
+    goto R_3
+    btfss CUR_SCREEN, 2
+    goto $+2
+    goto NOS_3
     goto KEYPAD_POLLING
 
 KEYPAD_POLLING
@@ -126,15 +163,21 @@ KEYPAD_POLLING
     andlw 0x0F
 
     call COMPARISON
-    btfss A_PRESSED, 0
-    goto $+2
-    goto MAIN
-    btfss B_PRESSED, 0
+    btfss KEY_PRESSED_TWO, 2 ;A
     goto $+2
     goto REALTIME
-    btfss C_PRESSED, 0
+    btfss KEY_PRESSED_TWO, 3 ;B
     goto $+2
-    goto REPORT
+    goto NEW_OPERATION_DISPLAY
+    btfss KEY_PRESSED_TWO, 4 ;C
+    goto $+2
+    goto REPORT_DISPLAY
+    btfss KEY_PRESSED_ONE, 7
+    goto $+2
+    goto SCR_FORWARD
+    btfss KEY_PRESSED_TWO, 0
+    goto $+2
+    goto SCR_BACKWARD
     goto NEXT
 
 
@@ -151,10 +194,17 @@ NEXT
 ;***************************************
 ; Look up table
 ;***************************************
-
-WELCOME_MESSAGE
+NEW_OPERATION_MESSAGE
 		addwf	PCL,F
-		dt		"Main Menu", 0
+		dt		"New operation", 0
+
+MAIN_MESSAGE_ONE
+        addwf   PCL,F
+        dt      "1st pattern: ", 0
+
+MAIN_MESSAGE_TWO
+        addwf   PCL,F
+        dt      "2nd pattern: ", 0
 
 REALTIME_MESSAGE
         addwf   PCL,F
@@ -163,13 +213,26 @@ REALTIME_MESSAGE
 INPUT_LINE_CHAR
 		addwf	PCL,F
 		dt		">",0
+
 REPORT_MESSAGE
         addwf   PCL, F
         dt      "Report", 0
 
 KEYPAD_INPUT_CHARACTERS
         addwf   PCL,F
-        dt      "123A456B789C*0#D"
+        dt      "123A456B789C*0#D", 0
+
+OPERATION_TIME
+        addwf   PCL, F
+        dt      "Operation time: ", 0
+
+INPUT_PATTERNS
+        addwf   PCL, F
+        dt      "Patterns: ", 0
+
+ERR_MESSAGE
+        addwf   PCL, F
+        dt      "An Error Occurred", 0
 
 ;****************************************
 ; LCD Related Subroutines
@@ -290,11 +353,31 @@ DELAY_500MS_0
     nop
     return
 
+;***************************************
+; Delay ??s
+;***************************************
+USER_DELAY
+	local USER_DELAY_0
+    movlw 0x88
+    movwf COUNTH
+    movlw 0xBD
+    movwf COUNTM
+    movlw 0x09
+    movwf COUNTL
+USER_DELAY_0
+    decfsz COUNTH, f
+    goto   $+2
+    decfsz COUNTM, f
+    goto   $+2
+    decfsz COUNTL, f
+    goto   USER_DELAY_0
+    goto $+1
+    nop
+    nop
+    return
+
 COMPARISON
-    movwf w_temp
     movwf comp_temp
-    clrw
-    addlw 1
     btfsc comp_temp, 3
 	goto THIRDNOTZERO
 	btfsc comp_temp, 2
@@ -303,9 +386,9 @@ COMPARISON
 	goto FIRSTNOTZERO_3
 	btfsc comp_temp, 0
 	goto $+3
-	addwf ONE_PRESSED, F
+	bsf KEY_PRESSED_ONE, 1
 	goto END_COMPARISON
-	addwf TWO_PRESSED, F
+	bsf KEY_PRESSED_ONE, 2
 	goto END_COMPARISON
 THIRDNOTZERO
 	btfsc comp_temp, 2
@@ -314,69 +397,63 @@ THIRDNOTZERO
 	goto FIRSTNOTZERO_1
 	btfsc comp_temp, 0
 	goto $+3
-	addwf SEVEN_PRESSED, F
+	bsf KEY_PRESSED_ONE, 7
 	goto END_COMPARISON
-	addwf EIGHT_PRESSED, F
+	bsf KEY_PRESSED_TWO, 0 ;8
 	goto END_COMPARISON
 SECONDNOTZERO_1
 	btfsc comp_temp, 1
 	goto FIRSTNOTZERO_2
 	btfsc comp_temp, 0
 	goto $+3
-	addwf FOUR_PRESSED, F
+	bsf KEY_PRESSED_ONE, 4
 	goto END_COMPARISON
-	addwf FIVE_PRESSED, F
+	bsf KEY_PRESSED_ONE, 5
 	goto END_COMPARISON
 SECONDNOTZERO
 	btfsc comp_temp, 1
 	goto FIRSTNOTZERO
 	btfsc comp_temp, 0
 	goto $+3
-	addwf STAR_PRESSED, F
+	bsf KEY_PRESSED_TWO, 6
 	goto END_COMPARISON
-	addwf ZERO_PRESSED, F
+	bsf KEY_PRESSED_ONE, 0
 	goto END_COMPARISON
 FIRSTNOTZERO_3
 	btfsc comp_temp, 0
 	goto $+3
-	addwf THREE_PRESSED
+	bsf KEY_PRESSED_ONE, 3
 	goto END_COMPARISON
-	addwf A_PRESSED
+	bsf KEY_PRESSED_TWO, 2 ;A
 	goto END_COMPARISON
 FIRSTNOTZERO_2
 	btfsc comp_temp, 0
 	goto $+3
-	addwf SIX_PRESSED
+	bsf KEY_PRESSED_ONE, 6
 	goto END_COMPARISON
-	addwf B_PRESSED
+	bsf KEY_PRESSED_TWO, 3 ;B
 	goto END_COMPARISON
 FIRSTNOTZERO_1
 	btfsc comp_temp, 0
 	goto $+3
-	addwf NINE_PRESSED, F
+	bsf KEY_PRESSED_TWO, 1 ;9
 	goto END_COMPARISON
-	addwf C_PRESSED, F
+	bsf KEY_PRESSED_TWO, 4 ;C
 	goto END_COMPARISON
 FIRSTNOTZERO
 	btfsc comp_temp, 0
 	goto ZEROTHNOTZERO
-	addwf POUND_PRESSED, F
+	bsf KEY_PRESSED_TWO, 7 ;#
 	goto END_COMPARISON
 ZEROTHNOTZERO
-	addwf D_PRESSED, F
+	bsf KEY_PRESSED_TWO, 5 ;D
 	goto END_COMPARISON
 END_COMPARISON
-    movf w_temp, W
     return
 
 CLEAR_KEYS
-    clrf A_PRESSED
-    clrf B_PRESSED
-    clrf C_PRESSED
-    clrf D_PRESSED
-    clrf FOUR_PRESSED
-    CLRF THREE_PRESSED
-    CLRF STAR_PRESSED
+    clrf KEY_PRESSED_ONE
+    clrf KEY_PRESSED_TWO
     return
 
         END

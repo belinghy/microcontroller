@@ -1,4 +1,4 @@
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE  1
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -15,7 +15,8 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00007 ;==========================================================================
                       00008 
                       00540         LIST
-2007   3F72           00003     __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
+2007   3F32           00003     __CONFIG _CP_OFF & _WDT_OFF & _BODEN_OFF & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OF
+                            F
                       00004 
                       00005 ; Declare variables
                       00006     cblock 0x20
@@ -28,538 +29,707 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
   00000026            00013         COUNTM ;(see above)
   00000027            00014         COUNTL ;(see above)
   00000028            00015         comp_temp
-  00000029            00016         w_temp
-  0000002A            00017         A_PRESSED
-  0000002B            00018         B_PRESSED
-  0000002C            00019         C_PRESSED
-  0000002D            00020         D_PRESSED
-  0000002E            00021         ONE_PRESSED
-  0000002F            00022         TWO_PRESSED
-  00000030            00023         THREE_PRESSED
-  00000031            00024         FOUR_PRESSED
-  00000032            00025         FIVE_PRESSED
-  00000033            00026         SIX_PRESSED
-  00000034            00027         SEVEN_PRESSED
-  00000035            00028         EIGHT_PRESSED
-  00000036            00029         NINE_PRESSED
-  00000037            00030         ZERO_PRESSED
-  00000038            00031         POUND_PRESSED
-  00000039            00032         STAR_PRESSED
-                      00033     endc
-                      00034 
-                      00035 ; Declare constants for pin assignment (LCD on PORTD, see Lab 2 on Portal)
-                      00036     #define     LCD_RS  PORTD,2
-                      00037         #define LCD_E   PORTD,3
-                      00038     #define KEYPAD_P PORTB,1
-                      00039 
-                      00040     ORG 0x0000
-0000   2???           00041     goto MAIN_INIT
-                      00042 
-                      00043 ;***************************
-                      00044 ;   Delay: 160ms
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE  2
+  00000029            00016         KEY_PRESSED_ONE
+  0000002A            00017         KEY_PRESSED_TWO
+  0000002B            00018         CUR_SCREEN
+                      00019     endc
+                      00020 
+                      00021 ; Declare constants for pin assignment (LCD on PORTD, see Lab 2 on Portal)
+                      00022     #define     LCD_RS  PORTD,2
+                      00023         #define LCD_E   PORTD,3
+                      00024     #define KEYPAD_P PORTB,1
+                      00025 
+                      00026     ORG 0x0000
+0000   2???           00027     goto MAIN_INIT
+                      00028 
+                      00029 ;***************************
+                      00030 ;   Delay: 160ms
+                      00031 ;***************************
+                      00032 LCD_DELAY macro
+                      00033     movlw 0xff
+                      00034     movwf lcd_d1
+                      00035     decfsz lcd_d1, f ; Decrement lcd_d1, if lcd_d1 = 0, then discard next instruction
+                      00036     goto $-1
+                      00037     endm
+                      00038 
+                      00039 ;***************************
+                      00040 ;   Display Macro
+                      00041 ;***************************
+                      00042 DISPLAY macro MESSAGE
+                      00043     local D_LOOP
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00045 ;***************************
-                      00046 LCD_DELAY macro
-                      00047     movlw 0xff
-                      00048     movwf lcd_d1
-                      00049     decfsz lcd_d1, f ; Decrement lcd_d1, if lcd_d1 = 0, then discard next instruction
-                      00050     goto $-1
-                      00051     endm
-                      00052 
-                      00053 ;***************************
-                      00054 ;   Display Macro
-                      00055 ;***************************
-                      00056 DISPLAY macro MESSAGE
-                      00057     local D_LOOP
-                      00058     local D_END
-                      00059     clrf table_counter
-                      00060     clrw
-                      00061 D_LOOP
-                      00062     movf table_counter, W
-                      00063     call MESSAGE ;??
-                      00064     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-                      00065     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-                      00066         goto D_END
-                      00067     call WR_DATA ;??
-                      00068     incf table_counter, F
-                      00069     goto D_LOOP
-                      00070 D_END
-                      00071     endm
-                      00072 
-                      00073 ;***************************************
-                      00074 ; Initialize LCD
-                      00075 ;***************************************
-0001                  00076 MAIN_INIT
-0001   018B           00077     clrf INTCON ; No interrupt
-0002   1683           00078     bsf STATUS, RP0
+                      00044     local D_END
+                      00045     clrf table_counter
+                      00046     clrw
+                      00047 D_LOOP
+                      00048     movf table_counter, W
+                      00049     call MESSAGE ;??
+                      00050     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+                      00051     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+                      00052         goto D_END
+                      00053     call WR_DATA ;??
+                      00054     incf table_counter, F
+                      00055     goto D_LOOP
+                      00056 D_END
+                      00057     endm
+                      00058 
+                      00059 ;***************************************
+                      00060 ; Initialize LCD
+                      00061 ;***************************************
+0001                  00062 MAIN_INIT
+0001   018B           00063     clrf INTCON ; No interrupt
+0002   1683           00064     bsf STATUS, RP0
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0003   0185           00079     clrf TRISA
-0004   30F2           00080     movlw b'11110010' ;Set required keypad inputs (PORTB is KEYPAD)
+0003   0185           00065     clrf TRISA
+0004   30F2           00066     movlw b'11110010' ;Set required keypad inputs (PORTB is KEYPAD)
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0005   0086           00081     movwf TRISB
+0005   0086           00067     movwf TRISB
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0006   0187           00082     clrf TRISC ;All port C is output
+0006   0187           00068     clrf TRISC ;All port C is output
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0007   0188           00083     clrf TRISD ;All port D is output (PORTD is LCD)
-                      00084 
-0008   1283           00085     bcf STATUS, RP0 ;Select bank 0
-0009   0185           00086     clrf PORTA
-000A   0186           00087     clrf PORTB
-000B   0187           00088     clrf PORTC
-000C   0188           00089     clrf PORTD
-000D   2???           00090     call INITLCD
-                      00091 
-                      00092 ;*************************************
-                      00093 ; Main Program
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE  3
+0007   0188           00069     clrf TRISD ;All port D is output (PORTD is LCD)
+                      00070 
+0008   1283           00071     bcf STATUS, RP0 ;Select bank 0
+0009   0185           00072     clrf PORTA
+000A   0186           00073     clrf PORTB
+000B   0187           00074     clrf PORTC
+000C   0188           00075     clrf PORTD
+000D   01AB           00076     clrf CUR_SCREEN
+000E   2???           00077     call CLEAR_KEYS
+000F   2???           00078     call INITLCD
+                      00079 
+                      00080 ;*************************************
+                      00081 ; Main Program
+                      00082 ;*************************************
+0010                  00083 REALTIME
+0010   3000           00084     movlw b'00000000'
+0011   00AB           00085     movwf CUR_SCREEN
+0012   2???           00086     call CLEAR_KEYS
+0013   2???           00087     call CLEAR_LCD
+                      00088     DISPLAY REALTIME_MESSAGE
+  0000                    M     local D_LOOP
+  0000                    M     local D_END
+0014   01A3               M     clrf table_counter
+0015   0103               M     clrw
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00094 ;*************************************
-000E                  00095 MAIN
-000E   2???           00096     call CLEAR_KEYS
-000F   2???           00097     call CLEAR_LCD
-                      00098     DISPLAY WELCOME_MESSAGE
+0016                      M D_LOOP
+0016   0823               M     movf table_counter, W
+0017   2???               M     call REALTIME_MESSAGE ;??
+0018   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0019   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+001A   2???               M         goto D_END
+001B   2???               M     call WR_DATA ;??
+001C   0AA3               M     incf table_counter, F
+001D   2???               M     goto D_LOOP
+001E                      M D_END
+                      00089 
+001E   2???           00090     call SWITCH_LINES
+                      00091     DISPLAY INPUT_LINE_CHAR
   0000                    M     local D_LOOP
   0000                    M     local D_END
-0010   01A3               M     clrf table_counter
-0011   0103               M     clrw
-0012                      M D_LOOP
-0012   0823               M     movf table_counter, W
-0013   2???               M     call WELCOME_MESSAGE ;??
-0014   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-0015   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-0016   2???               M         goto D_END
-0017   2???               M     call WR_DATA ;??
-0018   0AA3               M     incf table_counter, F
-0019   2???               M     goto D_LOOP
-001A                      M D_END
-                      00099 
-001A   2???           00100     call SWITCH_LINES
-                      00101     DISPLAY INPUT_LINE_CHAR
+001F   01A3               M     clrf table_counter
+0020   0103               M     clrw
+0021                      M D_LOOP
+0021   0823               M     movf table_counter, W
+0022   2???               M     call INPUT_LINE_CHAR ;??
+0023   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0024   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0025   2???               M         goto D_END
+0026   2???               M     call WR_DATA ;??
+0027   0AA3               M     incf table_counter, F
+0028   2???               M     goto D_LOOP
+0029                      M D_END
+0029   2???           00092     goto KEYPAD_POLLING
+                      00093 
+002A                  00094 NEW_OPERATION_DISPLAY
+002A   2???           00095     call CLEAR_KEYS
+002B   2???           00096     call CLEAR_LCD
+                      00097     DISPLAY NEW_OPERATION_MESSAGE
   0000                    M     local D_LOOP
   0000                    M     local D_END
-001B   01A3               M     clrf table_counter
-001C   0103               M     clrw
-001D                      M D_LOOP
-001D   0823               M     movf table_counter, W
-001E   2???               M     call INPUT_LINE_CHAR ;??
-001F   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-0020   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-0021   2???               M         goto D_END
-0022   2???               M     call WR_DATA ;??
-0023   0AA3               M     incf table_counter, F
-0024   2???               M     goto D_LOOP
-0025                      M D_END
-0025   2???           00102     goto KEYPAD_POLLING
-                      00103 
-0026                  00104 REALTIME
-0026   2???           00105     call CLEAR_KEYS
-0027   2???           00106     call CLEAR_LCD
-                      00107     DISPLAY REALTIME_MESSAGE
-  0000                    M     local D_LOOP
-  0000                    M     local D_END
-0028   01A3               M     clrf table_counter
-0029   0103               M     clrw
-002A                      M D_LOOP
-002A   0823               M     movf table_counter, W
-002B   2???               M     call REALTIME_MESSAGE ;??
-002C   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-002D   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-002E   2???               M         goto D_END
-002F   2???               M     call WR_DATA ;??
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE  4
+002C   01A3               M     clrf table_counter
+002D   0103               M     clrw
+002E                      M D_LOOP
+002E   0823               M     movf table_counter, W
+002F   2???               M     call NEW_OPERATION_MESSAGE ;??
+0030   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0031   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0032   2???               M         goto D_END
+0033   2???               M     call WR_DATA ;??
+0034   0AA3               M     incf table_counter, F
+0035   2???               M     goto D_LOOP
+0036                      M D_END
+0036   2???           00098     call USER_DELAY
+0037                  00099 NOS_2
+0037   3004           00100     movlw b'00000100'
+0038   00AB           00101     movwf CUR_SCREEN
+0039   2???           00102     call CLEAR_KEYS
+003A   2???           00103     call CLEAR_LCD
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE  4
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0030   0AA3               M     incf table_counter, F
-0031   2???               M     goto D_LOOP
-0032                      M D_END
-                      00108 
-0032   2???           00109     call SWITCH_LINES
-                      00110     DISPLAY INPUT_LINE_CHAR
+                      00104     DISPLAY MAIN_MESSAGE_ONE
   0000                    M     local D_LOOP
   0000                    M     local D_END
-0033   01A3               M     clrf table_counter
-0034   0103               M     clrw
-0035                      M D_LOOP
-0035   0823               M     movf table_counter, W
-0036   2???               M     call INPUT_LINE_CHAR ;??
-0037   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-0038   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-0039   2???               M         goto D_END
-003A   2???               M     call WR_DATA ;??
-003B   0AA3               M     incf table_counter, F
-003C   2???               M     goto D_LOOP
-003D                      M D_END
-003D   2???           00111     goto KEYPAD_POLLING
-                      00112 
-003E                  00113 REPORT
-003E   2???           00114     call CLEAR_KEYS
-003F   2???           00115     call CLEAR_LCD
-                      00116     DISPLAY REPORT_MESSAGE
+003B   01A3               M     clrf table_counter
+003C   0103               M     clrw
+003D                      M D_LOOP
+003D   0823               M     movf table_counter, W
+003E   2???               M     call MAIN_MESSAGE_ONE ;??
+003F   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0040   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0041   2???               M         goto D_END
+0042   2???               M     call WR_DATA ;??
+0043   0AA3               M     incf table_counter, F
+0044   2???               M     goto D_LOOP
+0045                      M D_END
+0045   2???           00105     call SWITCH_LINES
+                      00106     DISPLAY INPUT_LINE_CHAR
   0000                    M     local D_LOOP
   0000                    M     local D_END
-0040   01A3               M     clrf table_counter
-0041   0103               M     clrw
-0042                      M D_LOOP
-0042   0823               M     movf table_counter, W
-0043   2???               M     call REPORT_MESSAGE ;??
-0044   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-0045   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-0046   2???               M         goto D_END
-0047   2???               M     call WR_DATA ;??
-0048   0AA3               M     incf table_counter, F
-0049   2???               M     goto D_LOOP
-004A                      M D_END
-                      00117 
-004A   2???           00118     call SWITCH_LINES
-                      00119     DISPLAY INPUT_LINE_CHAR
+0046   01A3               M     clrf table_counter
+0047   0103               M     clrw
+0048                      M D_LOOP
+0048   0823               M     movf table_counter, W
+0049   2???               M     call INPUT_LINE_CHAR ;??
+004A   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+004B   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+004C   2???               M         goto D_END
+004D   2???               M     call WR_DATA ;??
+004E   0AA3               M     incf table_counter, F
+004F   2???               M     goto D_LOOP
+0050                      M D_END
+0050   2???           00107     goto KEYPAD_POLLING
+0051                  00108 NOS_3
+0051   3008           00109     movlw b'00001000'
+0052   00AB           00110     movwf CUR_SCREEN
+0053   2???           00111     call CLEAR_KEYS
+0054   2???           00112     call CLEAR_LCD
+                      00113     DISPLAY MAIN_MESSAGE_TWO
   0000                    M     local D_LOOP
   0000                    M     local D_END
-004B   01A3               M     clrf table_counter
-004C   0103               M     clrw
-004D                      M D_LOOP
-004D   0823               M     movf table_counter, W
-004E   2???               M     call INPUT_LINE_CHAR ;??
-004F   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
-0050   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
-0051   2???               M         goto D_END
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE  5
+0055   01A3               M     clrf table_counter
+0056   0103               M     clrw
+0057                      M D_LOOP
+0057   0823               M     movf table_counter, W
+0058   2???               M     call MAIN_MESSAGE_TWO ;??
+0059   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+005A   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+005B   2???               M         goto D_END
+005C   2???               M     call WR_DATA ;??
+005D   0AA3               M     incf table_counter, F
+005E   2???               M     goto D_LOOP
+005F                      M D_END
+005F   2???           00114     call SWITCH_LINES
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE  5
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0052   2???               M     call WR_DATA ;??
-0053   0AA3               M     incf table_counter, F
-0054   2???               M     goto D_LOOP
-0055                      M D_END
-0055   2???           00120     goto KEYPAD_POLLING
-                      00121 
-0056                  00122 KEYPAD_POLLING
-0056   1C86           00123     btfss KEYPAD_P ;Check if keypad is pressed
-0057   2???           00124     goto $-1
-0058   0E06           00125     swapf PORTB,W     ;Read PortB<7:4> into W<3:0>, because KEYPAD pins corresponds to RB4-7
-0059   390F           00126     andlw 0x0F
-                      00127 
-005A   2???           00128     call COMPARISON
-005B   1C2A           00129     btfss A_PRESSED, 0
-005C   2???           00130     goto $+2
-005D   2???           00131     goto MAIN
-005E   1C2B           00132     btfss B_PRESSED, 0
-005F   2???           00133     goto $+2
-0060   2???           00134     goto REALTIME
-0061   1C2C           00135     btfss C_PRESSED, 0
-0062   2???           00136     goto $+2
-0063   2???           00137     goto REPORT
-0064   2???           00138     goto NEXT
-                      00139 
+                      00115     DISPLAY INPUT_LINE_CHAR
+  0000                    M     local D_LOOP
+  0000                    M     local D_END
+0060   01A3               M     clrf table_counter
+0061   0103               M     clrw
+0062                      M D_LOOP
+0062   0823               M     movf table_counter, W
+0063   2???               M     call INPUT_LINE_CHAR ;??
+0064   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0065   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0066   2???               M         goto D_END
+0067   2???               M     call WR_DATA ;??
+0068   0AA3               M     incf table_counter, F
+0069   2???               M     goto D_LOOP
+006A                      M D_END
+                      00116 
+006A   2???           00117     goto KEYPAD_POLLING
+                      00118 
+006B                  00119 REPORT_DISPLAY
+006B   2???           00120     call CLEAR_KEYS
+006C   2???           00121     call CLEAR_LCD
+                      00122     DISPLAY REPORT_MESSAGE
+  0000                    M     local D_LOOP
+  0000                    M     local D_END
+006D   01A3               M     clrf table_counter
+006E   0103               M     clrw
+006F                      M D_LOOP
+006F   0823               M     movf table_counter, W
+0070   2???               M     call REPORT_MESSAGE ;??
+0071   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0072   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0073   2???               M         goto D_END
+0074   2???               M     call WR_DATA ;??
+0075   0AA3               M     incf table_counter, F
+0076   2???               M     goto D_LOOP
+0077                      M D_END
+0077   2???           00123     call USER_DELAY
+0078                  00124 R_2
+0078   3001           00125     movlw b'00000001'
+0079   00AB           00126     movwf CUR_SCREEN
+007A   2???           00127     call CLEAR_KEYS
+007B   2???           00128     call CLEAR_LCD
+                      00129     DISPLAY OPERATION_TIME
+  0000                    M     local D_LOOP
+  0000                    M     local D_END
+007C   01A3               M     clrf table_counter
+007D   0103               M     clrw
+007E                      M D_LOOP
+007E   0823               M     movf table_counter, W
+007F   2???               M     call OPERATION_TIME ;??
+0080   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0081   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0082   2???               M         goto D_END
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0083   2???               M     call WR_DATA ;??
+0084   0AA3               M     incf table_counter, F
+0085   2???               M     goto D_LOOP
+0086                      M D_END
+0086   2???           00130     call SWITCH_LINES
+0087   2???           00131     goto KEYPAD_POLLING
+0088                  00132 R_3
+0088   2???           00133     call CLEAR_KEYS
+0089   3002           00134     movlw b'00000010'
+008A   00AB           00135     movwf CUR_SCREEN
+008B   2???           00136     call CLEAR_LCD
+                      00137     DISPLAY INPUT_PATTERNS
+  0000                    M     local D_LOOP
+  0000                    M     local D_END
+008C   01A3               M     clrf table_counter
+008D   0103               M     clrw
+008E                      M D_LOOP
+008E   0823               M     movf table_counter, W
+008F   2???               M     call INPUT_PATTERNS ;??
+0090   3A00               M     xorlw B'00000000' ;used to change STATUS<Z>, if result is 0, then Z=1
+0091   1903               M     btfsc STATUS, Z ; if STATUS<Z> is 1, execute next inst. Else, discard next inst.
+0092   2???               M         goto D_END
+0093   2???               M     call WR_DATA ;??
+0094   0AA3               M     incf table_counter, F
+0095   2???               M     goto D_LOOP
+0096                      M D_END
+0096   2???           00138     call SWITCH_LINES
+0097   2???           00139     goto KEYPAD_POLLING
                       00140 
-0065                  00141 NEXT
-0065   2???           00142     call KEYPAD_INPUT_CHARACTERS ;Convert keypad values to LCD display values
-0066   2???           00143     call WR_DATA
-0067   1886           00144     btfsc KEYPAD_P     ;Wait until key is released
-0068   2???           00145     goto $-1
-0069   2???           00146     goto KEYPAD_POLLING
-                      00147 
-                      00148 
-006A   2???           00149     goto $
-                      00150 
-                      00151 ;***************************************
-                      00152 ; Look up table
-                      00153 ;***************************************
-                      00154 
-006B                  00155 WELCOME_MESSAGE
-006B   0782           00156                 addwf   PCL,F
-006C   344D 3461 3469 00157                 dt              "Main Menu", 0
-       346E 3420 344D 
-       3465 346E 3475 
-       3400 
+0098                  00141 SCR_FORWARD
+0098   2???           00142     call CLEAR_KEYS
+0099   1DAB           00143     btfss CUR_SCREEN, 3
+009A   2???           00144     goto $+2
+009B   2???           00145     goto NOS_2
+009C   2???           00146     goto KEYPAD_POLLING
+009D                  00147 SCR_BACKWARD
+009D   1C2B           00148     btfss CUR_SCREEN, 0
+009E   2???           00149     goto $+2
+009F   2???           00150     goto R_2
+00A0   1CAB           00151     btfss CUR_SCREEN, 1
+00A1   2???           00152     goto $+2
+00A2   2???           00153     goto R_3
+00A3   1D2B           00154     btfss CUR_SCREEN, 2
+00A4   2???           00155     goto $+2
+00A5   2???           00156     goto NOS_3
+00A6   2???           00157     goto KEYPAD_POLLING
                       00158 
-0076                  00159 REALTIME_MESSAGE
-0076   0782           00160         addwf   PCL,F
-0077   3452 3465 3461 00161         dt      "Real Time", 0
+00A7                  00159 KEYPAD_POLLING
+00A7   1C86           00160     btfss KEYPAD_P ;Check if keypad is pressed
+00A8   2???           00161     goto $-1
+00A9   0E06           00162     swapf PORTB,W     ;Read PortB<7:4> into W<3:0>, because KEYPAD pins corresponds to RB4-7
+00AA   390F           00163     andlw 0x0F
+                      00164 
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00AB   2???           00165     call COMPARISON
+00AC   1D2A           00166     btfss KEY_PRESSED_TWO, 2 ;A
+00AD   2???           00167     goto $+2
+00AE   2???           00168     goto REALTIME
+00AF   1DAA           00169     btfss KEY_PRESSED_TWO, 3 ;B
+00B0   2???           00170     goto $+2
+00B1   2???           00171     goto NEW_OPERATION_DISPLAY
+00B2   1CAA           00172     btfss KEY_PRESSED_TWO, 1 ;C
+00B3   2???           00173     goto $+2
+00B4   2???           00174     goto REPORT_DISPLAY
+00B5   1FA9           00175     btfss KEY_PRESSED_ONE, 7
+00B6   2???           00176     goto $+2
+00B7   2???           00177     goto SCR_FORWARD
+00B8   1C2A           00178     btfss KEY_PRESSED_TWO, 0
+00B9   2???           00179     goto $+2
+00BA   2???           00180     goto SCR_BACKWARD
+00BB   2???           00181     goto NEXT
+                      00182 
+                      00183 
+00BC                  00184 NEXT
+00BC   2???           00185     call KEYPAD_INPUT_CHARACTERS ;Convert keypad values to LCD display values
+00BD   2???           00186     call WR_DATA
+00BE   1886           00187     btfsc KEYPAD_P     ;Wait until key is released
+00BF   2???           00188     goto $-1
+00C0   2???           00189     goto KEYPAD_POLLING
+                      00190 
+                      00191 
+00C1   2???           00192     goto $
+                      00193 
+                      00194 ;***************************************
+                      00195 ; Look up table
+                      00196 ;***************************************
+00C2                  00197 NEW_OPERATION_MESSAGE
+00C2   0782           00198                 addwf   PCL,F
+00C3   344E 3465 3477 00199                 dt              "New operation", 0
+       3420 346F 3470 
+       3465 3472 3461 
+       3474 3469 346F 
+       346E 3400 
+                      00200 
+00D1                  00201 MAIN_MESSAGE_ONE
+00D1   0782           00202         addwf   PCL,F
+00D2   3431 3473 3474 00203         dt      "1st pattern: ", 0
+       3420 3470 3461 
+       3474 3474 3465 
+       3472 346E 343A 
+       3420 3400 
+                      00204 
+00E0                  00205 MAIN_MESSAGE_TWO
+00E0   0782           00206         addwf   PCL,F
+00E1   3432 346E 3464 00207         dt      "2nd pattern: ", 0
+       3420 3470 3461 
+       3474 3474 3465 
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+       3472 346E 343A 
+       3420 3400 
+                      00208 
+00EF                  00209 REALTIME_MESSAGE
+00EF   0782           00210         addwf   PCL,F
+00F0   3452 3465 3461 00211         dt      "Real Time", 0
        346C 3420 3454 
        3469 346D 3465 
        3400 
-                      00162 
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE  6
-
-
-LOC  OBJECT CODE     LINE SOURCE TEXT
-  VALUE
-
-0081                  00163 INPUT_LINE_CHAR
-0081   0782           00164                 addwf   PCL,F
-0082   343E 3400      00165                 dt              ">",0
-0084                  00166 REPORT_MESSAGE
-0084   0782           00167         addwf   PCL, F
-0085   3452 3465 3470 00168         dt      "Report", 0
+                      00212 
+00FA                  00213 INPUT_LINE_CHAR
+00FA   0782           00214                 addwf   PCL,F
+00FB   343E 3400      00215                 dt              ">",0
+                      00216 
+00FD                  00217 REPORT_MESSAGE
+00FD   0782           00218         addwf   PCL, F
+00FE   3452 3465 3470 00219         dt      "Report", 0
        346F 3472 3474 
        3400 
-                      00169 
-008C                  00170 KEYPAD_INPUT_CHARACTERS
-008C   0782           00171         addwf   PCL,F
-008D   3431 3432 3433 00172         dt      "123A456B789C*0#D"
+                      00220 
+0105                  00221 KEYPAD_INPUT_CHARACTERS
+0105   0782           00222         addwf   PCL,F
+0106   3431 3432 3433 00223         dt      "123A456B789C*0#D", 0
        3441 3434 3435 
        3436 3442 3437 
        3438 3439 3443 
        342A 3430 3423 
-       3444 
-                      00173 
-                      00174 ;****************************************
-                      00175 ; LCD Related Subroutines
-                      00176 ;****************************************
-009D                  00177 INITLCD
-009D   1283           00178     bcf STATUS, RP0
-009E   1588           00179     bsf LCD_E
-009F   2???           00180     call DELAY_5MS
-00A0   2???           00181     call DELAY_5MS
-00A1   2???           00182     call DELAY_5MS
-                      00183 
-                      00184     ;Ensure 8-bit mode first (no way to immediately guarantee 4-bit mode)
-                      00185         ; -> Send b'0011' 3 times
-00A2   3033           00186         movlw   b'00110011' ;Last two bits are don't cares
-00A3   2???           00187         call    WR_INST
-00A4   3032           00188         movlw   b'00110010'
-00A5   2???           00189         call    WR_INST
-                      00190     ; 4 bits, 2 lines, 5x7 dots
-00A6   3028           00191         movlw   b'00101000'
-00A7   2???           00192         call    WR_INST
-                      00193     ; display on/off
-00A8   300F           00194         movlw   b'00001111'
-00A9   2???           00195         call    WR_INST
-                      00196 
-                      00197         ; Entry mode
-00AA   3006           00198         movlw   b'00000110' ;??
-00AB   2???           00199         call    WR_INST
-                      00200 
-                      00201         ; Clear display
-00AC   3001           00202         movlw   b'00000001'
-00AD   2???           00203         call    WR_INST
-00AE   0008           00204         return
-                      00205 
-                      00206 ;************************************
-                      00207 ; LCD CONTROL
-                      00208 ;************************************
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE  7
+       3444 3400 
+                      00224 
+0117                  00225 OPERATION_TIME
+0117   0782           00226         addwf   PCL, F
+0118   344F 3470 3465 00227         dt      "Operation time: ", 0
+       3472 3461 3474 
+       3469 346F 346E 
+       3420 3474 3469 
+       346D 3465 343A 
+       3420 3400 
+                      00228 
+0129                  00229 INPUT_PATTERNS
+0129   0782           00230         addwf   PCL, F
+012A   3450 3461 3474 00231         dt      "Patterns: ", 0
+       3474 3465 3472 
+       346E 3473 343A 
+       3420 3400 
+                      00232 
+0135                  00233 ERR_MESSAGE
+0135   0782           00234         addwf   PCL, F
+0136   3441 346E 3420 00235         dt      "An Error Occurred", 0
+       3445 3472 3472 
+       346F 3472 3420 
+       344F 3463 3463 
+       3475 3472 3472 
+       3465 3464 3400 
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE  9
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-00AF                  00209 CLEAR_LCD
-00AF   3001           00210         movlw   B'00000001'
-00B0   2???           00211         call    WR_INST
-00B1   0008           00212     return
-                      00213 
-00B2                  00214 SWITCH_LINES
-00B2   30C0           00215     movlw       B'11000000'
-00B3   2???           00216         call    WR_INST
-00B4   0008           00217         return
-                      00218 
-                      00219 ;****************************************
-                      00220 ; Write command to LCD - Input : W , output : -
-                      00221 ; (Text P. 7-104)
-                      00222 ;****************************************
-00B5                  00223 WR_INST
-00B5   1108           00224     bcf LCD_RS
-00B6   00A2           00225     movwf com
-00B7   39F0           00226     andlw 0xf0
-00B8   0088           00227     movwf PORTD
-00B9   1588           00228     bsf LCD_E
-00BA   2???           00229     call DELAY_5MS
-00BB   1188           00230     bcf LCD_E
-00BC   0E22           00231     swapf com, W
-00BD   39F0           00232     andlw 0xf0
-00BE   0088           00233     movwf PORTD
-00BF   1588           00234     bsf LCD_E
-00C0   2???           00235     call DELAY_5MS
-00C1   1188           00236     bcf LCD_E
-00C2   2???           00237     call DELAY_5MS
-00C3   0008           00238     return
-                      00239 
-                      00240 ;****************************************
-                      00241 ; Write data to LCD - Input : W , output : -
-                      00242 ;****************************************
-00C4                  00243 WR_DATA
-00C4   1508           00244     bsf LCD_RS ;Exactly the same as bsf PORTD, 2. RS - Register selected
-00C5   00A4           00245     movwf dat ;Creates a copy of W into dat
-                      00246     ;movf dat, W ;?? Not sure why this line is needed, works without it
-00C6   39F0           00247     andlw 0xf0 ;??
-00C7   3E04           00248     addlw 4 ;?? Set RD2 to 1, and RD2 is RS. When RS is 1, you can write data to LCD, when RS is 0, you 
+                      00236 
+                      00237 ;****************************************
+                      00238 ; LCD Related Subroutines
+                      00239 ;****************************************
+0148                  00240 INITLCD
+0148   1283           00241     bcf STATUS, RP0
+0149   1588           00242     bsf LCD_E
+014A   2???           00243     call DELAY_5MS
+014B   2???           00244     call DELAY_5MS
+014C   2???           00245     call DELAY_5MS
+                      00246 
+                      00247     ;Ensure 8-bit mode first (no way to immediately guarantee 4-bit mode)
+                      00248         ; -> Send b'0011' 3 times
+014D   3033           00249         movlw   b'00110011' ;Last two bits are don't cares
+014E   2???           00250         call    WR_INST
+014F   3032           00251         movlw   b'00110010'
+0150   2???           00252         call    WR_INST
+                      00253     ; 4 bits, 2 lines, 5x7 dots
+0151   3028           00254         movlw   b'00101000'
+0152   2???           00255         call    WR_INST
+                      00256     ; display on/off
+0153   300F           00257         movlw   b'00001111'
+0154   2???           00258         call    WR_INST
+                      00259 
+                      00260         ; Entry mode
+0155   3006           00261         movlw   b'00000110' ;??
+0156   2???           00262         call    WR_INST
+                      00263 
+                      00264         ; Clear display
+0157   3001           00265         movlw   b'00000001'
+0158   2???           00266         call    WR_INST
+0159   0008           00267         return
+                      00268 
+                      00269 ;************************************
+                      00270 ; LCD CONTROL
+                      00271 ;************************************
+015A                  00272 CLEAR_LCD
+015A   3001           00273         movlw   B'00000001'
+015B   2???           00274         call    WR_INST
+015C   0008           00275     return
+                      00276 
+015D                  00277 SWITCH_LINES
+015D   30C0           00278     movlw       B'11000000'
+015E   2???           00279         call    WR_INST
+015F   0008           00280         return
+                      00281 
+                      00282 ;****************************************
+                      00283 ; Write command to LCD - Input : W , output : -
+                      00284 ; (Text P. 7-104)
+                      00285 ;****************************************
+0160                  00286 WR_INST
+0160   1108           00287     bcf LCD_RS
+0161   00A2           00288     movwf com
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0162   39F0           00289     andlw 0xf0
+0163   0088           00290     movwf PORTD
+0164   1588           00291     bsf LCD_E
+0165   2???           00292     call DELAY_5MS
+0166   1188           00293     bcf LCD_E
+0167   0E22           00294     swapf com, W
+0168   39F0           00295     andlw 0xf0
+0169   0088           00296     movwf PORTD
+016A   1588           00297     bsf LCD_E
+016B   2???           00298     call DELAY_5MS
+016C   1188           00299     bcf LCD_E
+016D   2???           00300     call DELAY_5MS
+016E   0008           00301     return
+                      00302 
+                      00303 ;****************************************
+                      00304 ; Write data to LCD - Input : W , output : -
+                      00305 ;****************************************
+016F                  00306 WR_DATA
+016F   1508           00307     bsf LCD_RS ;Exactly the same as bsf PORTD, 2. RS - Register selected
+0170   00A4           00308     movwf dat ;Creates a copy of W into dat
+                      00309     ;movf dat, W ;?? Not sure why this line is needed, works without it
+0171   39F0           00310     andlw 0xf0 ;??
+0172   3E04           00311     addlw 4 ;?? Set RD2 to 1, and RD2 is RS. When RS is 1, you can write data to LCD, when RS is 0, you 
                             can write command it LCD
-00C8   0088           00249     movwf PORTD
-00C9   1588           00250     bsf LCD_E
-00CA   2???           00251     call DELAY_5MS
-00CB   0E24           00252     swapf dat,W ;Swaps the lower half and upper half of dat and store in W
-00CC   39F0           00253         andlw 0xF0
-00CD   3E04           00254         addlw 4
-00CE   0088           00255         movwf PORTD
-00CF   1588           00256         bsf LCD_E
-00D0   2???           00257         call DELAY_5MS
-00D1   1188           00258         bcf LCD_E
-00D2   0008           00259         return
-                      00260 
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE  8
+0173   0088           00312     movwf PORTD
+0174   1588           00313     bsf LCD_E
+0175   2???           00314     call DELAY_5MS
+0176   0E24           00315     swapf dat,W ;Swaps the lower half and upper half of dat and store in W
+0177   39F0           00316         andlw 0xF0
+0178   3E04           00317         addlw 4
+0179   0088           00318         movwf PORTD
+017A   1588           00319         bsf LCD_E
+017B   2???           00320         call DELAY_5MS
+017C   1188           00321         bcf LCD_E
+017D   0008           00322         return
+                      00323 
+017E                  00324 DELAY_5MS ;~5ms
+017E   3014           00325     movlw d'20' ;20 seems to be arbitrary chosen. Less than 20 doesn't seem to work
+017F   00A1           00326     movwf lcd_d2
+0180                  00327 DELAY_5MS_LOOP
+                      00328     LCD_DELAY
+0180   30FF               M     movlw 0xff
+0181   00A0               M     movwf lcd_d1
+0182   0BA0               M     decfsz lcd_d1, f ; Decrement lcd_d1, if lcd_d1 = 0, then discard next instruction
+0183   2???               M     goto $-1
+0184   0BA1           00329     decfsz lcd_d2,f ;Calls LCD_DELAY 20 times
+0185   2???           00330     goto DELAY_5MS_LOOP
+0186   0008           00331     return
+                      00332 
+                      00333 ;***************************************
+                      00334 ; Delay 0.5s
+                      00335 ;***************************************
+0187                  00336 DELAY_500MS
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 11
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-00D3                  00261 DELAY_5MS ;~5ms
-00D3   3014           00262     movlw d'20' ;20 seems to be arbitrary chosen. Less than 20 doesn't seem to work
-00D4   00A1           00263     movwf lcd_d2
-00D5                  00264 DELAY_5MS_LOOP
-                      00265     LCD_DELAY
-00D5   30FF               M     movlw 0xff
-00D6   00A0               M     movwf lcd_d1
-00D7   0BA0               M     decfsz lcd_d1, f ; Decrement lcd_d1, if lcd_d1 = 0, then discard next instruction
-00D8   2???               M     goto $-1
-00D9   0BA1           00266     decfsz lcd_d2,f ;Calls LCD_DELAY 20 times
-00DA   2???           00267     goto DELAY_5MS_LOOP
-00DB   0008           00268     return
-                      00269 
-                      00270 ;***************************************
-                      00271 ; Delay 0.5s
-                      00272 ;***************************************
-00DC                  00273 DELAY_500MS
-  0000                00274         local DELAY_500MS_0
-00DC   3088           00275     movlw 0x88
-00DD   00A5           00276     movwf COUNTH
-00DE   30BD           00277     movlw 0xBD
-00DF   00A6           00278     movwf COUNTM
-00E0   3003           00279     movlw 0x03
-00E1   00A7           00280     movwf COUNTL
-00E2                  00281 DELAY_500MS_0
-00E2   0BA5           00282     decfsz COUNTH, f
-00E3   2???           00283     goto   $+2
-00E4   0BA6           00284     decfsz COUNTM, f
-00E5   2???           00285     goto   $+2
-00E6   0BA7           00286     decfsz COUNTL, f
-00E7   2???           00287     goto   DELAY_500MS_0
-00E8   2???           00288     goto $+1
-00E9   0000           00289     nop
-00EA   0000           00290     nop
-00EB   0008           00291     return
-                      00292 
-00EC                  00293 COMPARISON
-00EC   00A9           00294     movwf w_temp
-00ED   00A8           00295     movwf comp_temp
-00EE   0103           00296     clrw
-00EF   3E01           00297     addlw 1
-00F0   19A8           00298     btfsc comp_temp, 3
-00F1   2???           00299         goto THIRDNOTZERO
-00F2   1928           00300         btfsc comp_temp, 2
-00F3   2???           00301         goto SECONDNOTZERO_1
-00F4   18A8           00302         btfsc comp_temp, 1
-00F5   2???           00303         goto FIRSTNOTZERO_3
-00F6   1828           00304         btfsc comp_temp, 0
-00F7   2???           00305         goto $+3
-00F8   07AE           00306         addwf ONE_PRESSED, F
-00F9   2???           00307         goto END_COMPARISON
-00FA   07AF           00308         addwf TWO_PRESSED, F
-00FB   2???           00309         goto END_COMPARISON
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE  9
+  0000                00337         local DELAY_500MS_0
+0187   3088           00338     movlw 0x88
+0188   00A5           00339     movwf COUNTH
+0189   30BD           00340     movlw 0xBD
+018A   00A6           00341     movwf COUNTM
+018B   3003           00342     movlw 0x03
+018C   00A7           00343     movwf COUNTL
+018D                  00344 DELAY_500MS_0
+018D   0BA5           00345     decfsz COUNTH, f
+018E   2???           00346     goto   $+2
+018F   0BA6           00347     decfsz COUNTM, f
+0190   2???           00348     goto   $+2
+0191   0BA7           00349     decfsz COUNTL, f
+0192   2???           00350     goto   DELAY_500MS_0
+0193   2???           00351     goto $+1
+0194   0000           00352     nop
+0195   0000           00353     nop
+0196   0008           00354     return
+                      00355 
+                      00356 ;***************************************
+                      00357 ; Delay ??s
+                      00358 ;***************************************
+0197                  00359 USER_DELAY
+  0000                00360         local USER_DELAY_0
+0197   3088           00361     movlw 0x88
+0198   00A5           00362     movwf COUNTH
+0199   30BD           00363     movlw 0xBD
+019A   00A6           00364     movwf COUNTM
+019B   3009           00365     movlw 0x09
+019C   00A7           00366     movwf COUNTL
+019D                  00367 USER_DELAY_0
+019D   0BA5           00368     decfsz COUNTH, f
+019E   2???           00369     goto   $+2
+019F   0BA6           00370     decfsz COUNTM, f
+01A0   2???           00371     goto   $+2
+01A1   0BA7           00372     decfsz COUNTL, f
+01A2   2???           00373     goto   USER_DELAY_0
+01A3   2???           00374     goto $+1
+01A4   0000           00375     nop
+01A5   0000           00376     nop
+01A6   0008           00377     return
+                      00378 
+01A7                  00379 COMPARISON
+01A7   00A8           00380     movwf comp_temp
+01A8   19A8           00381     btfsc comp_temp, 3
+01A9   2???           00382         goto THIRDNOTZERO
+01AA   1928           00383         btfsc comp_temp, 2
+01AB   2???           00384         goto SECONDNOTZERO_1
+01AC   18A8           00385         btfsc comp_temp, 1
+01AD   2???           00386         goto FIRSTNOTZERO_3
+01AE   1828           00387         btfsc comp_temp, 0
+01AF   2???           00388         goto $+3
+01B0   14A9           00389         bsf KEY_PRESSED_ONE, 1
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 12
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-00FC                  00310 THIRDNOTZERO
-00FC   1928           00311         btfsc comp_temp, 2
-00FD   2???           00312         goto SECONDNOTZERO
-00FE   18A8           00313         btfsc comp_temp, 1
-00FF   2???           00314         goto FIRSTNOTZERO_1
-0100   1828           00315         btfsc comp_temp, 0
-0101   2???           00316         goto $+3
-0102   07B4           00317         addwf SEVEN_PRESSED, F
-0103   2???           00318         goto END_COMPARISON
-0104   07B5           00319         addwf EIGHT_PRESSED, F
-0105   2???           00320         goto END_COMPARISON
-0106                  00321 SECONDNOTZERO_1
-0106   18A8           00322         btfsc comp_temp, 1
-0107   2???           00323         goto FIRSTNOTZERO_2
-0108   1828           00324         btfsc comp_temp, 0
-0109   2???           00325         goto $+3
-010A   07B1           00326         addwf FOUR_PRESSED, F
-010B   2???           00327         goto END_COMPARISON
-010C   07B2           00328         addwf FIVE_PRESSED, F
-010D   2???           00329         goto END_COMPARISON
-010E                  00330 SECONDNOTZERO
-010E   18A8           00331         btfsc comp_temp, 1
-010F   2???           00332         goto FIRSTNOTZERO
-0110   1828           00333         btfsc comp_temp, 0
-0111   2???           00334         goto $+3
-0112   07B9           00335         addwf STAR_PRESSED, F
-0113   2???           00336         goto END_COMPARISON
-0114   07B7           00337         addwf ZERO_PRESSED, F
-0115   2???           00338         goto END_COMPARISON
-0116                  00339 FIRSTNOTZERO_3
-0116   1828           00340         btfsc comp_temp, 0
-0117   2???           00341         goto $+3
-Message[305]: Using default destination of 1 (file).
-0118   07B0           00342         addwf THREE_PRESSED
-0119   2???           00343         goto END_COMPARISON
-Message[305]: Using default destination of 1 (file).
-011A   07AA           00344         addwf A_PRESSED
-011B   2???           00345         goto END_COMPARISON
-011C                  00346 FIRSTNOTZERO_2
-011C   1828           00347         btfsc comp_temp, 0
-011D   2???           00348         goto $+3
-Message[305]: Using default destination of 1 (file).
-011E   07B3           00349         addwf SIX_PRESSED
-011F   2???           00350         goto END_COMPARISON
-Message[305]: Using default destination of 1 (file).
-0120   07AB           00351         addwf B_PRESSED
-0121   2???           00352         goto END_COMPARISON
-0122                  00353 FIRSTNOTZERO_1
-0122   1828           00354         btfsc comp_temp, 0
-0123   2???           00355         goto $+3
-0124   07B6           00356         addwf NINE_PRESSED, F
-0125   2???           00357         goto END_COMPARISON
-0126   07AC           00358         addwf C_PRESSED, F
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE 10
+01B1   2???           00390         goto END_COMPARISON
+01B2   1529           00391         bsf KEY_PRESSED_ONE, 2
+01B3   2???           00392         goto END_COMPARISON
+01B4                  00393 THIRDNOTZERO
+01B4   1928           00394         btfsc comp_temp, 2
+01B5   2???           00395         goto SECONDNOTZERO
+01B6   18A8           00396         btfsc comp_temp, 1
+01B7   2???           00397         goto FIRSTNOTZERO_1
+01B8   1828           00398         btfsc comp_temp, 0
+01B9   2???           00399         goto $+3
+01BA   17A9           00400         bsf KEY_PRESSED_ONE, 7
+01BB   2???           00401         goto END_COMPARISON
+01BC   142A           00402         bsf KEY_PRESSED_TWO, 0 ;8
+01BD   2???           00403         goto END_COMPARISON
+01BE                  00404 SECONDNOTZERO_1
+01BE   18A8           00405         btfsc comp_temp, 1
+01BF   2???           00406         goto FIRSTNOTZERO_2
+01C0   1828           00407         btfsc comp_temp, 0
+01C1   2???           00408         goto $+3
+01C2   1629           00409         bsf KEY_PRESSED_ONE, 4
+01C3   2???           00410         goto END_COMPARISON
+01C4   16A9           00411         bsf KEY_PRESSED_ONE, 5
+01C5   2???           00412         goto END_COMPARISON
+01C6                  00413 SECONDNOTZERO
+01C6   18A8           00414         btfsc comp_temp, 1
+01C7   2???           00415         goto FIRSTNOTZERO
+01C8   1828           00416         btfsc comp_temp, 0
+01C9   2???           00417         goto $+3
+01CA   172A           00418         bsf KEY_PRESSED_TWO, 6
+01CB   2???           00419         goto END_COMPARISON
+01CC   1429           00420         bsf KEY_PRESSED_ONE, 0
+01CD   2???           00421         goto END_COMPARISON
+01CE                  00422 FIRSTNOTZERO_3
+01CE   1828           00423         btfsc comp_temp, 0
+01CF   2???           00424         goto $+3
+01D0   15A9           00425         bsf KEY_PRESSED_ONE, 3
+01D1   2???           00426         goto END_COMPARISON
+01D2   152A           00427         bsf KEY_PRESSED_TWO, 2 ;A
+01D3   2???           00428         goto END_COMPARISON
+01D4                  00429 FIRSTNOTZERO_2
+01D4   1828           00430         btfsc comp_temp, 0
+01D5   2???           00431         goto $+3
+01D6   1729           00432         bsf KEY_PRESSED_ONE, 6
+01D7   2???           00433         goto END_COMPARISON
+01D8   15AA           00434         bsf KEY_PRESSED_TWO, 3 ;B
+01D9   2???           00435         goto END_COMPARISON
+01DA                  00436 FIRSTNOTZERO_1
+01DA   1828           00437         btfsc comp_temp, 0
+01DB   2???           00438         goto $+3
+01DC   14AA           00439         bsf KEY_PRESSED_TWO, 1 ;9
+01DD   2???           00440         goto END_COMPARISON
+01DE   162A           00441         bsf KEY_PRESSED_TWO, 4 ;C
+01DF   2???           00442         goto END_COMPARISON
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 13
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0127   2???           00359         goto END_COMPARISON
-0128                  00360 FIRSTNOTZERO
-0128   1828           00361         btfsc comp_temp, 0
-0129   2???           00362         goto ZEROTHNOTZERO
-012A   07B8           00363         addwf POUND_PRESSED, F
-012B   2???           00364         goto END_COMPARISON
-012C                  00365 ZEROTHNOTZERO
-012C   07AD           00366         addwf D_PRESSED, F
-012D   2???           00367         goto END_COMPARISON
-012E                  00368 END_COMPARISON
-012E   0829           00369     movf w_temp, W
-012F   0008           00370     return
-                      00371 
-0130                  00372 CLEAR_KEYS
-0130   01AA           00373     clrf A_PRESSED
-0131   01AB           00374     clrf B_PRESSED
-0132   01AC           00375     clrf C_PRESSED
-0133   01AD           00376     clrf D_PRESSED
-0134   01B1           00377     clrf FOUR_PRESSED
-0135   01B0           00378     CLRF THREE_PRESSED
-0136   01B9           00379     CLRF STAR_PRESSED
-0137   0008           00380     return
-                      00381 
-3F72                  00382         END
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE 11
+01E0                  00443 FIRSTNOTZERO
+01E0   1828           00444         btfsc comp_temp, 0
+01E1   2???           00445         goto ZEROTHNOTZERO
+01E2   17AA           00446         bsf KEY_PRESSED_TWO, 7 ;#
+01E3   2???           00447         goto END_COMPARISON
+01E4                  00448 ZEROTHNOTZERO
+01E4   16AA           00449         bsf KEY_PRESSED_TWO, 5 ;D
+01E5   2???           00450         goto END_COMPARISON
+01E6                  00451 END_COMPARISON
+01E6   0008           00452     return
+                      00453 
+01E7                  00454 CLEAR_KEYS
+01E7   01A9           00455     clrf KEY_PRESSED_ONE
+01E8   01AA           00456     clrf KEY_PRESSED_TWO
+01E9   0008           00457     return
+                      00458 
+3F32                  00459         END
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 14
 
 
 SYMBOL TABLE
@@ -579,12 +749,10 @@ ADIF                              00000006
 ADON                              00000000
 ADRESH                            0000001E
 ADRESL                            0000009E
-A_PRESSED                         0000002A
 BCLIE                             00000003
 BCLIF                             00000003
 BF                                00000000
 BRGH                              00000002
-B_PRESSED                         0000002B
 C                                 00000000
 CCP1CON                           00000017
 CCP1IE                            00000002
@@ -615,31 +783,30 @@ CHS1                              00000004
 CHS2                              00000005
 CKE                               00000006
 CKP                               00000004
-CLEAR_KEYS                        00000130
-CLEAR_LCD                         000000AF
-COMPARISON                        000000EC
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE 12
+CLEAR_KEYS                        000001E7
+CLEAR_LCD                         0000015A
+COMPARISON                        000001A7
+COUNTH                            00000025
+COUNTL                            00000027
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 15
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-COUNTH                            00000025
-COUNTL                            00000027
 COUNTM                            00000026
 CREN                              00000004
 CSRC                              00000007
-C_PRESSED                         0000002C
+CUR_SCREEN                        0000002B
 D                                 00000005
 DATA_ADDRESS                      00000005
 DC                                00000001
-DELAY_500MS                       000000DC
-DELAY_5MS                         000000D3
-DELAY_5MS_LOOP                    000000D5
+DELAY_500MS                       00000187
+DELAY_5MS                         0000017E
+DELAY_5MS_LOOP                    00000180
 DISPLAY                           
 D_A                               00000005
 D_NOT_A                           00000005
-D_PRESSED                         0000002D
 EEADR                             0000010D
 EEADRH                            0000010F
 EECON1                            0000018C
@@ -649,16 +816,14 @@ EEDATH                            0000010E
 EEIE                              00000004
 EEIF                              00000004
 EEPGD                             00000007
-EIGHT_PRESSED                     00000035
-END_COMPARISON                    0000012E
+END_COMPARISON                    000001E6
+ERR_MESSAGE                       00000135
 F                                 00000001
 FERR                              00000002
-FIRSTNOTZERO                      00000128
-FIRSTNOTZERO_1                    00000122
-FIRSTNOTZERO_2                    0000011C
-FIRSTNOTZERO_3                    00000116
-FIVE_PRESSED                      00000032
-FOUR_PRESSED                      00000031
+FIRSTNOTZERO                      000001E0
+FIRSTNOTZERO_1                    000001DA
+FIRSTNOTZERO_2                    000001D4
+FIRSTNOTZERO_3                    000001CE
 FSR                               00000004
 GCEN                              00000007
 GIE                               00000007
@@ -672,29 +837,36 @@ I2C_STOP                          00000004
 IBF                               00000007
 IBOV                              00000005
 INDF                              00000000
-INITLCD                           0000009D
-INPUT_LINE_CHAR                   00000081
+INITLCD                           00000148
+INPUT_LINE_CHAR                   000000FA
+INPUT_PATTERNS                    00000129
 INTCON                            0000000B
 INTE                              00000004
 INTEDG                            00000006
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE 13
+INTF                              00000001
+IRP                               00000007
+KEYPAD_INPUT_CHARACTERS           00000105
+KEYPAD_P                          PORTB,1
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 16
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-INTF                              00000001
-IRP                               00000007
-KEYPAD_INPUT_CHARACTERS           0000008C
-KEYPAD_P                          PORTB,1
-KEYPAD_POLLING                    00000056
+KEYPAD_POLLING                    000000A7
+KEY_PRESSED_ONE                   00000029
+KEY_PRESSED_TWO                   0000002A
 LCD_DELAY                         
 LCD_E                             PORTD,3
 LCD_RS                            PORTD,2
-MAIN                              0000000E
 MAIN_INIT                         00000001
-NEXT                              00000065
-NINE_PRESSED                      00000036
+MAIN_MESSAGE_ONE                  000000D1
+MAIN_MESSAGE_TWO                  000000E0
+NEW_OPERATION_DISPLAY             0000002A
+NEW_OPERATION_MESSAGE             000000C2
+NEXT                              000000BC
+NOS_2                             00000037
+NOS_3                             00000051
 NOT_A                             00000005
 NOT_ADDRESS                       00000005
 NOT_BO                            00000000
@@ -711,7 +883,7 @@ NOT_W                             00000002
 NOT_WRITE                         00000002
 OBF                               00000006
 OERR                              00000001
-ONE_PRESSED                       0000002E
+OPERATION_TIME                    00000117
 OPTION_REG                        00000081
 P                                 00000004
 PCFG0                             00000000
@@ -732,16 +904,15 @@ PORTB                             00000006
 PORTC                             00000007
 PORTD                             00000008
 PORTE                             00000009
-POUND_PRESSED                     00000038
 PR2                               00000092
 PS0                               00000000
-PS1                               00000001
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE 14
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 17
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+PS1                               00000001
 PS2                               00000002
 PSA                               00000003
 PSPIE                             00000007
@@ -793,29 +964,31 @@ RE0                               00000000
 RE1                               00000001
 RE2                               00000002
 READ_WRITE                        00000002
-REALTIME                          00000026
-REALTIME_MESSAGE                  00000076
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE 15
+REALTIME                          00000010
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 18
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-REPORT                            0000003E
-REPORT_MESSAGE                    00000084
+REALTIME_MESSAGE                  000000EF
+REPORT_DISPLAY                    0000006B
+REPORT_MESSAGE                    000000FD
 RP0                               00000005
 RP1                               00000006
 RSEN                              00000001
 RX9                               00000006
 RX9D                              00000000
+R_2                               00000078
+R_3                               00000088
 R_NOT_W                           00000002
 R_W                               00000002
 S                                 00000003
-SECONDNOTZERO                     0000010E
-SECONDNOTZERO_1                   00000106
+SCR_BACKWARD                      0000009D
+SCR_FORWARD                       00000098
+SECONDNOTZERO                     000001C6
+SECONDNOTZERO_1                   000001BE
 SEN                               00000000
-SEVEN_PRESSED                     00000034
-SIX_PRESSED                       00000033
 SMP                               00000007
 SPBRG                             00000099
 SPEN                              00000007
@@ -833,9 +1006,8 @@ SSPM2                             00000002
 SSPM3                             00000003
 SSPOV                             00000006
 SSPSTAT                           00000094
-STAR_PRESSED                      00000039
 STATUS                            00000003
-SWITCH_LINES                      000000B2
+SWITCH_LINES                      0000015D
 SYNC                              00000004
 T0CS                              00000005
 T0IE                              00000005
@@ -850,16 +1022,15 @@ T1SYNC                            00000002
 T2CKPS0                           00000000
 T2CKPS1                           00000001
 T2CON                             00000012
-THIRDNOTZERO                      000000FC
-THREE_PRESSED                     00000030
+THIRDNOTZERO                      000001B4
 TMR0                              00000001
-TMR0IE                            00000005
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE 16
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 19
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+TMR0IE                            00000005
 TMR0IF                            00000002
 TMR1                              0000000E
 TMR1CS                            00000001
@@ -912,16 +1083,15 @@ TRISD6                            00000006
 TRISD7                            00000007
 TRISE                             00000089
 TRISE0                            00000000
-TRISE1                            00000001
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE 17
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 20
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+TRISE1                            00000001
 TRISE2                            00000002
 TRMT                              00000001
-TWO_PRESSED                       0000002F
 TX8_9                             00000006
 TX9                               00000006
 TX9D                              00000000
@@ -932,38 +1102,52 @@ TXIF                              00000004
 TXREG                             00000019
 TXSTA                             00000098
 UA                                00000001
+USER_DELAY                        00000197
 W                                 00000000
 WCOL                              00000007
-WELCOME_MESSAGE                   0000006B
 WR                                00000001
 WREN                              00000002
 WRERR                             00000003
-WR_DATA                           000000C4
-WR_INST                           000000B5
+WR_DATA                           0000016F
+WR_INST                           00000160
 Z                                 00000002
-ZEROTHNOTZERO                     0000012C
-ZERO_PRESSED                      00000037
-_.org_0_0057                      00000057
-_.org_0_005C                      0000005C
-_.org_0_005F                      0000005F
-_.org_0_0062                      00000062
-_.org_0_0068                      00000068
-_.org_0_006A                      0000006A
-_.org_0_00D8                      000000D8
-_.org_0_00E3                      000000E3
-_.org_0_00E5                      000000E5
-_.org_0_00E8                      000000E8
-_.org_0_00F7                      000000F7
-_.org_0_0101                      00000101
-_.org_0_0109                      00000109
-_.org_0_0111                      00000111
-_.org_0_0117                      00000117
-_.org_0_011D                      0000011D
-_.org_0_0123                      00000123
+ZEROTHNOTZERO                     000001E4
+_.org_0_009A                      0000009A
+_.org_0_009E                      0000009E
+_.org_0_00A1                      000000A1
+_.org_0_00A4                      000000A4
+_.org_0_00A8                      000000A8
+_.org_0_00AD                      000000AD
+_.org_0_00B0                      000000B0
+_.org_0_00B3                      000000B3
+_.org_0_00B6                      000000B6
+_.org_0_00B9                      000000B9
+_.org_0_00BF                      000000BF
+_.org_0_00C1                      000000C1
+_.org_0_0183                      00000183
+_.org_0_018E                      0000018E
+_.org_0_0190                      00000190
+_.org_0_0193                      00000193
+_.org_0_019E                      0000019E
+_.org_0_01A0                      000001A0
+_.org_0_01A3                      000001A3
+_.org_0_01AF                      000001AF
+_.org_0_01B9                      000001B9
+_.org_0_01C1                      000001C1
+_.org_0_01C9                      000001C9
+_.org_0_01CF                      000001CF
+_.org_0_01D5                      000001D5
+_.org_0_01DB                      000001DB
 _BODEN_OFF                        00003FBF
 _BODEN_ON                         00003FFF
 _BOREN_OFF                        00003FBF
 _BOREN_ON                         00003FFF
+MPASM  5.48                          MAIN.ASM   2-5-2013  0:22:06         PAGE 21
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 _CONFIG                           00002007
 _CPD_OFF                          00003FFF
 _CPD_ON                           00003EFF
@@ -972,12 +1156,6 @@ _CP_HALF                          00001FDF
 _CP_OFF                           00003FFF
 _CP_UPPER_256                     00002FEF
 _DEBUG_OFF                        00003FFF
-MPASM  5.48                          MAIN.ASM   2-3-2013  13:13:38         PAGE 18
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 _DEBUG_ON                         000037FF
 _DEVID1                           00002006
 _FOSC_EXTRC                       00003FFF
@@ -1011,10 +1189,9 @@ dat                               00000024
 lcd_d1                            00000020
 lcd_d2                            00000021
 table_counter                     00000023
-w_temp                            00000029
 
 Errors   :     0
 Warnings :     0 reported,     0 suppressed
-Messages :     8 reported,     0 suppressed
+Messages :     4 reported,     0 suppressed
 
 
