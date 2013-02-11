@@ -1,6 +1,6 @@
     list p=16f877
     #include <p16f877.inc>
-    __CONFIG _CP_OFF & _WDT_OFF & _BODEN_OFF & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
+    __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
 
 ; Declare variables
     cblock 0x20
@@ -13,6 +13,9 @@
         COUNTM ;(see above)
         COUNTL ;(see above)
         comp_temp
+    endc
+
+    cblock 0x70
         KEY_PRESSED_ONE
         KEY_PRESSED_TWO
         CUR_SCREEN
@@ -76,6 +79,7 @@ MAIN_INIT
     clrf CUR_SCREEN
     call CLEAR_KEYS
     call INITLCD
+    goto REALTIME
 
 ;*************************************
 ; Main Program
@@ -113,9 +117,7 @@ NOS_3
     DISPLAY MAIN_MESSAGE_TWO
     call SWITCH_LINES
     DISPLAY INPUT_LINE_CHAR
-
     goto KEYPAD_POLLING
-
 REPORT_DISPLAY
     call CLEAR_KEYS
     call CLEAR_LCD
@@ -138,25 +140,8 @@ R_3
     call SWITCH_LINES
     goto KEYPAD_POLLING
 
-SCR_FORWARD
-    call CLEAR_KEYS
-    btfss CUR_SCREEN, 3
-    goto $+2
-    goto NOS_2
-    goto KEYPAD_POLLING
-SCR_BACKWARD
-    btfss CUR_SCREEN, 0
-    goto $+2
-    goto R_2
-    btfss CUR_SCREEN, 1
-    goto $+2
-    goto R_3
-    btfss CUR_SCREEN, 2
-    goto $+2
-    goto NOS_3
-    goto KEYPAD_POLLING
-
 KEYPAD_POLLING
+    call CLEAR_KEYS
     btfss KEYPAD_P ;Check if keypad is pressed
     goto $-1
     swapf PORTB,W     ;Read PortB<7:4> into W<3:0>, because KEYPAD pins corresponds to RB4-7
@@ -179,8 +164,6 @@ KEYPAD_POLLING
     goto $+2
     goto SCR_BACKWARD
     goto NEXT
-
-
 NEXT
     call KEYPAD_INPUT_CHARACTERS ;Convert keypad values to LCD display values
     call WR_DATA
@@ -188,6 +171,24 @@ NEXT
     goto $-1
     goto KEYPAD_POLLING
 
+
+SCR_FORWARD
+    call CLEAR_KEYS
+    btfss CUR_SCREEN, 3
+    goto $+2
+    goto NOS_2
+    goto KEYPAD_POLLING
+SCR_BACKWARD
+    btfss CUR_SCREEN, 0
+    goto $+2
+    goto R_2
+    btfss CUR_SCREEN, 1
+    goto $+2
+    goto R_3
+    btfss CUR_SCREEN, 2
+    goto $+2
+    goto NOS_3
+    goto KEYPAD_POLLING
 
     goto $
 
