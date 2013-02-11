@@ -1,0 +1,35 @@
+Warning[205] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 3 : Found directive in column 1. (cblock)
+Warning[205] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 10 : Found directive in column 1. (ENDC)
+Warning[205] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 12 : Found directive in column 1. (code)
+Warning[205] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 13 : Found directive in column 1. (global)
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 28 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 30 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 32 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 34 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 53 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 56 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 63 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 65 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 67 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 69 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 76 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 80 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 82 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 87 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 108 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 114 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 134 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 137 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 140 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 143 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 145 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 148 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 169 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Warning[203] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 175 : Found opcode in column 1. (decfsz)
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 175 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 197 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 200 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 206 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 210 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 216 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DROPBOX\AER201\MICROCONTROLLER\TEST\TEST.X\TEST2.ASM 219 : Register in operand not in bank 0.  Ensure that bank bits are correct.
