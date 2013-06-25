@@ -1,0 +1,33 @@
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 65 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 72 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 78 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 83 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 91 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 99 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 107 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 120 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 125 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 132 : Found directive in column 1. (endm)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 138 : Found directive in column 1. (endm)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 237 : Found label after column 1. (stop)
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 271 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 273 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 275 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 277 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 279 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 281 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 283 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 451 : Found label after column 1. (reset_rt_hms5)
+Message[305] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 498 : Using default destination of 1 (file).
+Message[305] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 506 : Using default destination of 1 (file).
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 119 : Found label after column 1. (tablename)
+Warning[207] C:\USERS\BEN\DESKTOP\UHH\UHH.X\MAIN.ASM 1030 : Found label after column 1. (readlog)

@@ -1,0 +1,9 @@
+forcesensor
+	movwf temp ; temp has addr of result
+	bsf ADCON0, GO
+forcesensor_loop
+	btfsc ADCON0, GO
+	goto forcesensor_loop
+	movf ADRESH, w ; move most significant 8-bit of result
+	movwf temp
+	return

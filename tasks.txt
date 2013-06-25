@@ -1,0 +1,23 @@
+AER201 MICROCONTROLLER
+
+	O- EDIT: keyresp (to enter pattern 1 and 2)
+		- EDIT: make <start> key ???????OPTIONAL???????
+	- WRITE: run
+		- Actuactor control
+		- forcesensor
+			- the purpose of forcesensor module is to put two numbers in redr and camelr. Printing message needs to be done in makeline, writelog, and readlog.
+	- WRITE: A2D module
+	O- WRITE: calcruntime
+	O- WRITE: writelog
+		O- EDIT: "layout" part of writelog
+		O- EDIT: "layout" part of readlog
+		O- ADD: "pattern" part of writelog
+		O- FIX: "ency stop" part at the end of report/log
+	O- WRITE readlog
+	
+	
+Notes:
+	- literal TABLE has already exceeded limit for number of characters
+	- anything related to "layout" we may not need
+	- If MAPLAB fails to clean and build, terminate "make.exe"
+	- "MAXLINE" in "common.inc" can be changed depending on the number of lines each report has (~4 at the moment, original 9)

@@ -1,0 +1,37 @@
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 3 : Found directive in column 1. (cblock)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 10 : Found directive in column 1. (ENDC)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 12 : Found directive in column 1. (code)
+Warning[205] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 13 : Found directive in column 1. (global)
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 28 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 30 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 32 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 34 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 43 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 49 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 70 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 73 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 80 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 82 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 84 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 86 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 93 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 97 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 99 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 104 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 125 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 131 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 151 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 154 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 157 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 160 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 162 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 165 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 186 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Warning[203] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 192 : Found opcode in column 1. (decfsz)
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 192 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 214 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 217 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 223 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 227 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 233 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\BEN\DESKTOP\UHH\UHH.X\DELAY.ASM 236 : Register in operand not in bank 0.  Ensure that bank bits are correct.

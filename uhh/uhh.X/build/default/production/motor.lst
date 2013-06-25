@@ -1,0 +1,2078 @@
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001     #include <p16f877.inc>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F877 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2012 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00540         LIST
+                      00002     #include <common.inc>
+                      00001         ;extern LCD_init, LCD_clear, LCD_line2s, LCD_out, LCD_wt, delay50us, delay5ms, delayX5msm, delay
+                            100ms, delayX100msm, delay1sl
+                      00002 
+                      00003 
+                      00004         #define DEBUG
+                      00005         #define NULL 0x00 ; must not change
+                      00006         #define FALSE 0x00 ; must not change
+                      00007         #define TRUE 0xFF ; must not change
+                      00008         #define KEYPAD_DA PORTB, 1
+                      00009         #define SMOTOR_S0 PORTD, 0
+                      00010         #define SMOTOR_S1 PORTD, 1
+                      00011         #define SMOTOR_S2 PORTE, 0
+                      00012         #define SMOTOR_S3 PORTE, 1
+                      00013         #define SMOTOR_EN PORTE, 2
+                      00014         #define PMOTOR PORTC, 1
+                      00015     #define SWMOTOR PORTC, 0
+                      00016     #define VMOTOR_C0 PORTC, 2
+                      00017         #define VMOTOR_C1 PORTC, 3
+                      00018         ;#define IRLED PORTC, 2
+                      00019         ;#define FB_TOP PORTC, 5
+                      00020         ;#define FB_BOT PORTC, 6
+                      00021         #define FB_ROW4 PORTC, 7
+                      00022         #define LCD_RS PORTD, 2
+                      00023         #define LCD_E PORTD, 3
+                      00024         #define LCD_PORT PORTD
+                      00025         #define CL_POS_BIT 0
+                      00026         #define CL_FN_BIT 1
+                      00027         #define CL_ERR_BIT 2
+                      00028         #define STOP_BUT 0x0B ; stop buttom
+                      00029         #define PHASE_HDINIT 0 ; Phase 0: Hardware Initialization/Reset
+                      00030         #define PHASE_RTCINIT 1 ; Phase 1: RTC Initialization/Reset
+                      00031         #define PHASE_REALTIME 2 ; Phase 2: Real Time
+                      00032         #define PHASE_NOREPORT 3 ; Phase 3: No Report
+                      00033         #define PHASE_REPORT 4 ; Phase 4: Report Review
+                      00034         #define PHASE_RUN 5 ; Phase 5: Inspection Run
+                      00035         #define PHASE_FINISH 6 ; Phase 6: Inspection Finish
+                      00036         ; pull-up diable, Timer0 internal clk, pos edge, 1:64
+                      00037         #define INITVAL_OPTREG B'10000101'
+                      00038         #define INITVAL_TRISA B'00101111'
+                      00039         #define INITVAL_TRISB B'11110010'
+                      00040         #define INITVAL_TRISC B'11100000' ;B'11100000'!!!!
+                      00041         #define INITVAL_TRISD B'00000000'
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00042         #define INITVAL_TRISE B'00000000'
+                      00043         #define INITVAL_ADCON0 B'10000001' ; 32Tosc, AN0, ADC on
+                      00044         #define INITVAL_ADCON1 B'00000100' ; left justified, 3 channel, 0 Vref, RA0, RA1, RA3
+                      00045 ;******************CONSTANTS****************************************************
+  00000006            00046 MAXLINE EQU .6 ; (max "line_num" - 1) in report phase
+  00000014            00047 MAXPOS EQU .20 ; total positions = ROWS*COLS
+  00000004            00048 ROWS EQU .4 ; total 4 rows to move
+  00000005            00049 COLS EQU .5 ; total 5 cols in a row
+  00000002            00050 FSNUM EQU .2 ; number of force sensors
+  00000003            00051 MAXCLINROW EQU .3 ; max number of CLs possible in a row
+  0000001E            00052 DCDOWNDELAY EQU .30 ; * 0.1s == elapse time for DC motor to drive down
+  0000001C            00053 SMOTOR_STEPS EQU .28 ; * 4 == # of steps that stepper motor need to turn
+  00000006            00054 SMOTOR_SPD_F EQU .6 ; speed fact: speed = 1 step / (SMOTOR_SPD_F * 5ms)
+  00000050            00055 THD_CL3LED EQU .80 ; threshold to distinguish between 2 LEDs and 3LEDS
+  0000001C            00056 THD_IRLED EQU .28 ; threshold for infrared reflected light
+  00000005            00057 THD_BG EQU .5 ; threshold for background variation (add to light_bg)
+  0000000C            00058 MAXLOG EQU .12 ; max number of log
+  00000006            00059 MAXLOGBANK EQU .6 ; max number of log per bank = MAXLOG/2
+  00000010            00060 LOGLENGTH EQU .16 ; length of each log entry
+  00000004            00061 LIGHTAVGX EQU .4 ; number of sample light sensor reading to be averaged
+                      00062 ;******************MACROS*******************************************************
+                      00063 BANK0 macro
+                      00064         bcf STATUS, RP0
+                      00065         endm
+                      00066 BANK1 macro
+                      00067         bsf STATUS, RP0
+                      00068         endm
+                      00069 BANK00 macro
+                      00070         bcf STATUS, IRP
+                      00071         bcf STATUS, RP1
+                      00072         bcf STATUS, RP0
+                      00073         endm
+                      00074         ;BANK02 macro
+                      00075         ; bsf STATUS, IRP
+                      00076         ; bsf STATUS, RP1
+                      00077         ; bcf STATUS, RP0
+                      00078         ; endm
+                      00079         ;
+                      00080         ;BANK03 macro
+                      00081         ; bsf STATUS, IRP
+                      00082         ; bsf STATUS, RP1
+                      00083         ; bsf STATUS, RP0
+                      00084         ; endm
+                      00085         ; Affect W!
+                      00086 MOVFF macro dest, orig
+                      00087         movf orig, w
+                      00088         movwf dest
+                      00089         endm
+                      00090 ; Affect W!
+                      00091 MOVLF macro dest, literal
+                      00092         movlw literal
+                      00093         movwf dest
+                      00094         endm
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00095 
+                      00096 FCALL macro subroutine
+                      00097     local here
+                      00098     lcall subroutine
+                      00099     pagesel here
+                      00100 here:
+                      00101     endm
+  0000                00003     extern delay50us, delay5ms, delayX5msm, delay100ms, delayX100msm, delay1sl
+  0000                00004     global run_expat1, run_expat2, run_expat3, run_expat4, run_expat5, run_expat6, run_eexpat1, run_eexp
+                            at2, run_eexpat3, run_eexpat4, run_eexpat5, run_eexpat6
+                      00005 
+                      00006 DELAY_2500MS macro
+                      00007     movlw .5
+                      00008     call delayX100msm
+                      00009     call delay1sl
+                      00010     call delay1sl
+Warning[205]: Found directive in column 1. (endm)
+                      00011 endm
+                      00012 
+                      00013 DELAY_1800MS macro
+                      00014     movlw .8
+                      00015     call delayX100msm
+                      00016     call delay1sl
+Warning[205]: Found directive in column 1. (endm)
+                      00017 endm
+                      00018 
+                      00019 DELAY_1500MS macro
+                      00020     movlw .5
+                      00021     call delayX100msm
+                      00022     call delay1sl
+Warning[205]: Found directive in column 1. (endm)
+                      00023 endm
+                      00024 
+                      00025 page2 code 0x0800
+                      00026 ; bsf PORTC, 0 is cw
+                      00027 ; bsf PORTC, 2 is ccw
+                      00028 ; right reservoir white
+                      00029 ; left reservoir red
+0800                  00030 run_expat1
+                      00031     ; all red
+0800   1007           00032         bcf PORTC, 0
+0801   1507           00033     bsf PORTC, 2
+0802   ???? ????      00034     pagesel delay100ms
+                      00035     ;call delay100ms
+0804   3006           00036     movlw .6
+0805   2???           00037     call delayX100msm
+                      00038         ; call delay100ms
+0806   1107           00039         bcf PORTC, 2
+0807   2???           00040     call delay100ms
+0808   1407           00041     bsf PORTC, 0
+0809   3004           00042         movlw .4
+080A   2???           00043     call delayX100msm
+                      00044         ; call delay1sl
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+080B   1007           00045     bcf PORTC, 0
+080C   2???           00046     call delay100ms
+080D   1507           00047     bsf PORTC, 2
+080E   3006           00048         movlw .6
+080F   2???           00049     call delayX100msm
+0810   1107           00050     bcf PORTC, 2
+0811   2???           00051     call delay100ms
+0812   1407           00052     bsf PORTC, 0
+0813   3004           00053         movlw .4
+0814   2???           00054     call delayX100msm
+                      00055     ; call delay1sl
+0815   1007           00056         bcf PORTC, 0
+0816   2???           00057     call delay100ms
+0817   1507           00058     bsf PORTC, 2
+0818   3006           00059         movlw .6
+0819   2???           00060     call delayX100msm
+081A   1107           00061         bcf PORTC, 2
+081B   2???           00062     call delay100ms
+081C   1407           00063     bsf PORTC, 0
+081D   3004           00064         movlw .4
+081E   2???           00065     call delayX100msm
+                      00066     ; call delay1sl
+081F   1007           00067         bcf PORTC, 0
+0820   2???           00068     call delay100ms
+0821   1507           00069     bsf PORTC, 2
+0822   3006           00070         movlw .6
+0823   2???           00071     call delayX100msm
+0824   1107           00072         bcf PORTC, 2
+0825   2???           00073     call delay100ms
+0826   1407           00074     bsf PORTC, 0
+0827   3004           00075         movlw .4
+0828   2???           00076     call delayX100msm
+                      00077     ; call delay1sl
+0829   1007           00078         bcf PORTC, 0
+082A   2???           00079     call delay100ms
+082B   1507           00080     bsf PORTC, 2
+082C   3006           00081         movlw .6
+082D   2???           00082     call delayX100msm
+082E   1107           00083         bcf PORTC, 2
+082F   2???           00084     call delay100ms
+0830   1407           00085     bsf PORTC, 0
+0831   3004           00086         movlw .4
+0832   2???           00087     call delayX100msm
+0833   1007           00088         bcf PORTC, 0
+0834   2???           00089     call delay100ms
+0835   1507           00090     bsf PORTC, 2
+0836   3006           00091         movlw .6
+0837   2???           00092     call delayX100msm
+0838   1107           00093         bcf PORTC, 2
+0839   2???           00094     call delay100ms
+083A   1407           00095     bsf PORTC, 0
+083B   3004           00096         movlw .4
+083C   2???           00097     call delayX100msm
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+083D   1007           00098     bcf PORTC, 0
+083E   2???           00099     call delay100ms
+083F   1507           00100     bsf PORTC, 2
+0840   3006           00101         movlw .6
+0841   2???           00102     call delayX100msm
+0842   1107           00103         bcf PORTC, 2
+0843   2???           00104     call delay100ms
+0844   1407           00105     bsf PORTC, 0
+0845   3004           00106         movlw .4
+0846   2???           00107     call delayX100msm
+0847   1007           00108     bcf PORTC, 0
+0848   2???           00109     call delay100ms
+0849   1507           00110     bsf PORTC, 2
+084A   3006           00111         movlw .6
+084B   2???           00112     call delayX100msm
+084C   1107           00113         bcf PORTC, 2
+084D   2???           00114     call delay100ms
+084E   1407           00115     bsf PORTC, 0
+084F   3004           00116         movlw .4
+0850   2???           00117     call delayX100msm
+0851   1007           00118         bcf PORTC, 0
+0852   2???           00119     call delay100ms
+0853   1507           00120     bsf PORTC, 2
+0854   3006           00121         movlw .6
+0855   2???           00122     call delayX100msm
+0856   1107           00123         bcf PORTC, 2
+0857   2???           00124     call delay100ms
+0858   1407           00125     bsf PORTC, 0
+0859   3004           00126         movlw .4
+085A   2???           00127     call delayX100msm
+085B   1007           00128         bcf PORTC, 0
+085C   2???           00129     call delay100ms
+085D   1507           00130     bsf PORTC, 2
+085E   3006           00131         movlw .6
+085F   2???           00132     call delayX100msm
+0860   1107           00133         bcf PORTC, 2
+0861   2???           00134     call delay100ms
+0862   1407           00135     bsf PORTC, 0
+0863   3003           00136         movlw .3
+0864   2???           00137     call delayX100msm
+0865   300A           00138     movlw .10
+0866   2???           00139     call delayX5msm
+0867   1107           00140     bcf PORTC, 2
+0868   1007           00141     bcf PORTC, 0
+                      00142     
+                      00143     
+0869   0008           00144         return
+086A                  00145 run_expat2
+                      00146 ; all white
+086A   1107           00147         bcf PORTC, 2
+086B   1407           00148     bsf PORTC, 0
+086C   ???? ????      00149     pagesel delay100ms
+                      00150     ;call delay100ms
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+086E   3006           00151     movlw .6
+086F   2???           00152     call delayX100msm
+                      00153         ; call delay100ms
+0870   1007           00154         bcf PORTC, 0
+0871   2???           00155     call delay100ms
+0872   1507           00156     bsf PORTC, 2
+0873   3004           00157         movlw .4
+0874   2???           00158     call delayX100msm
+0875   300A           00159     movlw .10
+0876   2???           00160     call delayX5msm
+                      00161         ; call delay1sl
+0877   1107           00162     bcf PORTC, 2
+0878   2???           00163     call delay100ms
+0879   1407           00164     bsf PORTC, 0
+087A   3006           00165         movlw .6
+087B   2???           00166     call delayX100msm
+087C   1007           00167     bcf PORTC, 0
+087D   2???           00168     call delay100ms
+087E   1507           00169     bsf PORTC, 2
+087F   3004           00170         movlw .4
+0880   2???           00171     call delayX100msm
+0881   300A           00172     movlw .10
+0882   2???           00173     call delayX5msm
+                      00174     ; call delay1sl
+0883   1107           00175         bcf PORTC, 2
+0884   2???           00176     call delay100ms
+0885   1407           00177     bsf PORTC, 0
+0886   3006           00178         movlw .6
+0887   2???           00179     call delayX100msm
+0888   1007           00180         bcf PORTC, 0
+0889   2???           00181     call delay100ms
+088A   1507           00182     bsf PORTC, 2
+088B   3004           00183         movlw .4
+088C   2???           00184     call delayX100msm
+088D   300A           00185     movlw .10
+088E   2???           00186     call delayX5msm
+                      00187     ; call delay1sl
+088F   1107           00188         bcf PORTC, 2
+0890   2???           00189     call delay100ms
+0891   1407           00190     bsf PORTC, 0
+0892   3006           00191         movlw .6
+0893   2???           00192     call delayX100msm
+0894   1007           00193         bcf PORTC, 0
+0895   2???           00194     call delay100ms
+0896   1507           00195     bsf PORTC, 2
+0897   3004           00196         movlw .4
+0898   2???           00197     call delayX100msm
+0899   300A           00198     movlw .10
+089A   2???           00199     call delayX5msm
+                      00200     ; call delay1sl
+089B   1107           00201         bcf PORTC, 2
+089C   2???           00202     call delay100ms
+089D   1407           00203     bsf PORTC, 0
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+089E   3006           00204         movlw .6
+089F   2???           00205     call delayX100msm
+08A0   1007           00206         bcf PORTC, 0
+08A1   2???           00207     call delay100ms
+08A2   1507           00208     bsf PORTC, 2
+08A3   3004           00209         movlw .4
+08A4   2???           00210     call delayX100msm
+08A5   300A           00211         movlw .10
+08A6   2???           00212     call delayX5msm
+08A7   1107           00213     bcf PORTC, 2
+08A8   2???           00214     call delay100ms
+08A9   1407           00215     bsf PORTC, 0
+08AA   3006           00216         movlw .6
+08AB   2???           00217     call delayX100msm
+08AC   1007           00218         bcf PORTC, 0
+08AD   2???           00219     call delay100ms
+08AE   1507           00220     bsf PORTC, 2
+08AF   3004           00221         movlw .4
+08B0   2???           00222     call delayX100msm
+08B1   300A           00223     movlw .10
+08B2   2???           00224     call delayX5msm
+08B3   1107           00225     bcf PORTC, 2
+08B4   2???           00226     call delay100ms
+08B5   1407           00227     bsf PORTC, 0
+08B6   3006           00228         movlw .6
+08B7   2???           00229     call delayX100msm
+08B8   1007           00230         bcf PORTC, 0
+08B9   2???           00231     call delay100ms
+08BA   1507           00232     bsf PORTC, 2
+08BB   3004           00233         movlw .4
+08BC   2???           00234     call delayX100msm
+08BD   300A           00235     movlw .10
+08BE   2???           00236     call delayX5msm
+08BF   1107           00237     bcf PORTC, 2
+08C0   2???           00238     call delay100ms
+08C1   1407           00239     bsf PORTC, 0
+08C2   3006           00240         movlw .6
+08C3   2???           00241     call delayX100msm
+08C4   1007           00242         bcf PORTC, 0
+08C5   2???           00243     call delay100ms
+08C6   1507           00244     bsf PORTC, 2
+08C7   3004           00245         movlw .4
+08C8   2???           00246     call delayX100msm
+08C9   300A           00247         movlw .10
+08CA   2???           00248     call delayX5msm
+08CB   1107           00249     bcf PORTC, 2
+08CC   2???           00250     call delay100ms
+08CD   1407           00251     bsf PORTC, 0
+08CE   3006           00252         movlw .6
+08CF   2???           00253     call delayX100msm
+08D0   1007           00254         bcf PORTC, 0
+08D1   2???           00255     call delay100ms
+08D2   1507           00256     bsf PORTC, 2
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+08D3   3004           00257         movlw .4
+08D4   2???           00258     call delayX100msm
+08D5   300A           00259         movlw .10
+08D6   2???           00260     call delayX5msm
+08D7   1107           00261     bcf PORTC, 2
+08D8   2???           00262     call delay100ms
+08D9   1407           00263     bsf PORTC, 0
+08DA   3006           00264         movlw .6
+08DB   2???           00265     call delayX100msm
+08DC   1007           00266         bcf PORTC, 0
+08DD   2???           00267     call delay100ms
+08DE   1507           00268     bsf PORTC, 2
+08DF   3003           00269         movlw .3
+08E0   2???           00270     call delayX100msm
+08E1   3006           00271     movlw .6
+08E2   2???           00272     call delayX5msm
+08E3   1107           00273     bcf PORTC, 2
+08E4   1007           00274     bcf PORTC, 0
+                      00275 
+08E5   0008           00276         return
+08E6                  00277 run_expat3
+                      00278       ; all white top all red bottom
+08E6   ???? ????      00279     pagesel delay100ms
+08E8   1007           00280     bcf PORTC, 0
+08E9   1507           00281     bsf PORTC, 2
+08EA   3006           00282         movlw .6
+08EB   2???           00283     call delayX100msm
+08EC   1107           00284         bcf PORTC, 2
+08ED   2???           00285     call delay100ms
+08EE   1407           00286     bsf PORTC, 0
+08EF   3004           00287     movlw .4
+08F0   2???           00288     call delayX100msm
+08F1   1007           00289         bcf PORTC, 0
+08F2   2???           00290     call delay100ms
+08F3   1507           00291     bsf PORTC, 2
+08F4   3006           00292         movlw .6
+08F5   2???           00293     call delayX100msm
+08F6   1107           00294         bcf PORTC, 2
+08F7   2???           00295     call delay100ms
+08F8   1407           00296     bsf PORTC, 0
+08F9   3004           00297     movlw .4
+08FA   2???           00298     call delayX100msm
+08FB   1007           00299         bcf PORTC, 0
+08FC   2???           00300     call delay100ms
+08FD   1507           00301     bsf PORTC, 2
+08FE   3006           00302         movlw .6
+08FF   2???           00303     call delayX100msm
+0900   1107           00304         bcf PORTC, 2
+0901   2???           00305     call delay100ms
+0902   1407           00306     bsf PORTC, 0
+0903   3004           00307     movlw .4
+0904   2???           00308     call delayX100msm
+0905   1007           00309         bcf PORTC, 0
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0906   2???           00310     call delay100ms
+0907   1507           00311     bsf PORTC, 2
+0908   3006           00312         movlw .6
+0909   2???           00313     call delayX100msm
+090A   1107           00314         bcf PORTC, 2
+090B   2???           00315     call delay100ms
+090C   1407           00316     bsf PORTC, 0
+090D   3004           00317     movlw .4
+090E   2???           00318     call delayX100msm
+090F   1007           00319     bcf PORTC, 0
+0910   2???           00320     call delay100ms
+0911   1507           00321     bsf PORTC, 2
+0912   3006           00322         movlw .6
+0913   2???           00323     call delayX100msm
+0914   1107           00324         bcf PORTC, 2
+0915   2???           00325     call delay100ms
+0916   1407           00326     bsf PORTC, 0
+0917   3004           00327         movlw .4
+0918   2???           00328     call delayX100msm
+0919   1107           00329         bcf PORTC, 2
+091A   2???           00330     call delay100ms
+091B   1407           00331     bsf PORTC, 0
+091C   3006           00332         movlw .6
+091D   2???           00333     call delayX100msm
+091E   1007           00334         bcf PORTC, 0
+091F   2???           00335     call delay100ms
+0920   1507           00336     bsf PORTC, 2
+0921   3004           00337         movlw .4
+0922   2???           00338     call delayX100msm
+0923   1107           00339         bcf PORTC, 2
+0924   2???           00340     call delay100ms
+0925   1407           00341     bsf PORTC, 0
+0926   3006           00342         movlw .6
+0927   2???           00343     call delayX100msm
+0928   1007           00344         bcf PORTC, 0
+0929   2???           00345     call delay100ms
+092A   1507           00346     bsf PORTC, 2
+092B   3004           00347         movlw .4
+092C   2???           00348     call delayX100msm
+092D   1107           00349         bcf PORTC, 2
+092E   2???           00350     call delay100ms
+092F   1407           00351     bsf PORTC, 0
+0930   3006           00352         movlw .6
+0931   2???           00353     call delayX100msm
+0932   1007           00354         bcf PORTC, 0
+0933   2???           00355     call delay100ms
+0934   1507           00356     bsf PORTC, 2
+0935   3004           00357         movlw .4
+0936   2???           00358     call delayX100msm
+0937   1107           00359         bcf PORTC, 2
+0938   2???           00360     call delay100ms
+0939   1407           00361     bsf PORTC, 0
+093A   3006           00362         movlw .6
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+093B   2???           00363     call delayX100msm
+093C   1007           00364         bcf PORTC, 0
+093D   2???           00365     call delay100ms
+093E   1507           00366     bsf PORTC, 2
+093F   3004           00367         movlw .4
+0940   2???           00368     call delayX100msm
+0941   1107           00369         bcf PORTC, 2
+0942   2???           00370     call delay100ms
+0943   1407           00371     bsf PORTC, 0
+0944   3006           00372         movlw .6
+0945   2???           00373     call delayX100msm
+0946   1007           00374         bcf PORTC, 0
+0947   2???           00375     call delay100ms
+0948   1507           00376     bsf PORTC, 2
+0949   3003           00377         movlw .3
+094A   2???           00378     call delayX100msm
+094B   300A           00379     movlw .10
+094C   2???           00380     call delayX5msm
+094D   1107           00381     bcf PORTC, 2
+                      00382     ;call delay100ms
+094E   1007           00383     bcf PORTC, 0
+                      00384 
+094F   0008           00385     return
+0950                  00386 run_expat4
+                      00387     ; alternating two's (white top)
+0950   ???? ????      00388     pagesel delay100ms
+0952   1007           00389         bcf PORTC, 0
+0953   1507           00390     bsf PORTC, 2
+0954   3006           00391         movlw .6
+0955   2???           00392     call delayX100msm
+0956   1107           00393         bcf PORTC, 2
+0957   2???           00394     call delay100ms
+0958   1407           00395     bsf PORTC, 0
+0959   3004           00396     movlw .4
+095A   2???           00397     call delayX100msm
+095B   1007           00398         bcf PORTC, 0
+095C   2???           00399     call delay100ms
+095D   1507           00400     bsf PORTC, 2
+095E   3006           00401         movlw .6
+095F   2???           00402     call delayX100msm
+0960   1107           00403         bcf PORTC, 2
+0961   2???           00404     call delay100ms
+0962   1407           00405     bsf PORTC, 0
+0963   3004           00406         movlw .4
+0964   2???           00407     call delayX100msm
+0965   1107           00408         bcf PORTC, 2
+0966   2???           00409     call delay100ms
+0967   1407           00410     bsf PORTC, 0
+0968   3006           00411         movlw .6
+0969   2???           00412     call delayX100msm
+096A   1007           00413         bcf PORTC, 0
+096B   2???           00414     call delay100ms
+096C   1507           00415     bsf PORTC, 2
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+096D   3004           00416     movlw .4
+096E   2???           00417     call delayX100msm
+096F   300A           00418     movlw .10
+0970   2???           00419     call delayX5msm
+0971   1107           00420         bcf PORTC, 2
+0972   2???           00421     call delay100ms
+0973   1407           00422     bsf PORTC, 0
+0974   3006           00423         movlw .6
+0975   2???           00424     call delayX100msm
+0976   1007           00425         bcf PORTC, 0
+0977   2???           00426     call delay100ms
+0978   1507           00427     bsf PORTC, 2
+0979   3004           00428         movlw .4
+097A   2???           00429     call delayX100msm
+097B   1007           00430         bcf PORTC, 0
+097C   2???           00431     call delay100ms
+097D   1507           00432     bsf PORTC, 2
+097E   3006           00433         movlw .6
+097F   2???           00434     call delayX100msm
+0980   1107           00435         bcf PORTC, 2
+0981   2???           00436     call delay100ms
+0982   1407           00437     bsf PORTC, 0
+0983   3004           00438     movlw .4
+0984   2???           00439     call delayX100msm
+0985   1007           00440         bcf PORTC, 0
+0986   2???           00441     call delay100ms
+0987   1507           00442     bsf PORTC, 2
+0988   3006           00443         movlw .6
+0989   2???           00444     call delayX100msm
+098A   1107           00445         bcf PORTC, 2
+098B   2???           00446     call delay100ms
+098C   1407           00447     bsf PORTC, 0
+098D   3004           00448         movlw .4
+098E   2???           00449     call delayX100msm
+098F   1107           00450         bcf PORTC, 2
+0990   2???           00451     call delay100ms
+0991   1407           00452     bsf PORTC, 0
+0992   3006           00453         movlw .6
+0993   2???           00454     call delayX100msm
+0994   1007           00455         bcf PORTC, 0
+0995   2???           00456     call delay100ms
+0996   1507           00457     bsf PORTC, 2
+0997   3004           00458     movlw .4
+0998   2???           00459     call delayX100msm
+0999   1107           00460         bcf PORTC, 2
+099A   2???           00461     call delay100ms
+099B   1407           00462     bsf PORTC, 0
+099C   3006           00463         movlw .6
+099D   2???           00464     call delayX100msm
+099E   1007           00465         bcf PORTC, 0
+099F   2???           00466     call delay100ms
+09A0   1507           00467     bsf PORTC, 2
+09A1   3004           00468         movlw .4
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+09A2   2???           00469     call delayX100msm
+09A3   1007           00470         bcf PORTC, 0
+09A4   2???           00471     call delay100ms
+09A5   1507           00472     bsf PORTC, 2
+09A6   3006           00473         movlw .6
+09A7   2???           00474     call delayX100msm
+09A8   1107           00475         bcf PORTC, 2
+09A9   2???           00476     call delay100ms
+09AA   1407           00477     bsf PORTC, 0
+09AB   3004           00478         movlw .4
+09AC   2???           00479     call delayX100msm
+09AD   1007           00480         bcf PORTC, 0
+09AE   2???           00481     call delay100ms
+09AF   1507           00482     bsf PORTC, 2
+09B0   3006           00483         movlw .6
+09B1   2???           00484     call delayX100msm
+09B2   1107           00485         bcf PORTC, 2
+09B3   2???           00486     call delay100ms
+09B4   1407           00487     bsf PORTC, 0
+09B5   3003           00488         movlw .3
+09B6   2???           00489     call delayX100msm
+09B7   1107           00490     bcf PORTC, 2
+09B8   1007           00491     bcf PORTC, 0
+                      00492 
+09B9   0008           00493     return
+09BA                  00494 run_expat5
+                      00495     ; alternating two's (red top)
+09BA   ???? ????      00496     pagesel delay100ms
+09BC   1107           00497         bcf PORTC, 2
+09BD   1407           00498     bsf PORTC, 0
+09BE   3006           00499         movlw .6
+09BF   2???           00500     call delayX100msm
+09C0   1007           00501         bcf PORTC, 0
+09C1   2???           00502     call delay100ms
+09C2   1507           00503     bsf PORTC, 2
+09C3   3004           00504     movlw .4
+09C4   2???           00505     call delayX100msm
+09C5   300A           00506     movlw .10
+09C6   2???           00507     call delayX5msm
+09C7   1107           00508         bcf PORTC, 2
+09C8   2???           00509     call delay100ms
+09C9   1407           00510     bsf PORTC, 0
+09CA   3006           00511         movlw .6
+09CB   2???           00512     call delayX100msm
+09CC   1007           00513         bcf PORTC, 0
+09CD   2???           00514     call delay100ms
+09CE   1507           00515     bsf PORTC, 2
+09CF   3004           00516         movlw .4
+09D0   2???           00517     call delayX100msm
+09D1   1007           00518         bcf PORTC, 0
+09D2   2???           00519     call delay100ms
+09D3   1507           00520     bsf PORTC, 2
+09D4   3006           00521         movlw .6
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+09D5   2???           00522     call delayX100msm
+09D6   1107           00523         bcf PORTC, 2
+09D7   2???           00524     call delay100ms
+09D8   1407           00525     bsf PORTC, 0
+09D9   3004           00526     movlw .4
+09DA   2???           00527     call delayX100msm
+09DB   1007           00528         bcf PORTC, 0
+09DC   2???           00529     call delay100ms
+09DD   1507           00530     bsf PORTC, 2
+09DE   3006           00531         movlw .6
+09DF   2???           00532     call delayX100msm
+09E0   1107           00533         bcf PORTC, 2
+09E1   2???           00534     call delay100ms
+09E2   1407           00535     bsf PORTC, 0
+09E3   3004           00536         movlw .4
+09E4   2???           00537     call delayX100msm
+09E5   1107           00538         bcf PORTC, 2
+09E6   2???           00539     call delay100ms
+09E7   1407           00540     bsf PORTC, 0
+09E8   3006           00541         movlw .6
+09E9   2???           00542     call delayX100msm
+09EA   1007           00543         bcf PORTC, 0
+09EB   2???           00544     call delay100ms
+09EC   1507           00545     bsf PORTC, 2
+09ED   3004           00546     movlw .4
+09EE   2???           00547     call delayX100msm
+09EF   1107           00548         bcf PORTC, 2
+09F0   2???           00549     call delay100ms
+09F1   1407           00550     bsf PORTC, 0
+09F2   3006           00551         movlw .6
+09F3   2???           00552     call delayX100msm
+09F4   1007           00553         bcf PORTC, 0
+09F5   2???           00554     call delay100ms
+09F6   1507           00555     bsf PORTC, 2
+09F7   3004           00556         movlw .4
+09F8   2???           00557     call delayX100msm
+09F9   1007           00558         bcf PORTC, 0
+09FA   2???           00559     call delay100ms
+09FB   1507           00560     bsf PORTC, 2
+09FC   3006           00561         movlw .6
+09FD   2???           00562     call delayX100msm
+09FE   1107           00563         bcf PORTC, 2
+09FF   2???           00564     call delay100ms
+0A00   1407           00565     bsf PORTC, 0
+0A01   3004           00566     movlw .4
+0A02   2???           00567     call delayX100msm
+0A03   1007           00568         bcf PORTC, 0
+0A04   2???           00569     call delay100ms
+0A05   1507           00570     bsf PORTC, 2
+0A06   3006           00571         movlw .6
+0A07   2???           00572     call delayX100msm
+0A08   1107           00573         bcf PORTC, 2
+0A09   2???           00574     call delay100ms
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0A0A   1407           00575     bsf PORTC, 0
+0A0B   3004           00576         movlw .4
+0A0C   2???           00577     call delayX100msm
+0A0D   1107           00578         bcf PORTC, 2
+0A0E   2???           00579     call delay100ms
+0A0F   1407           00580     bsf PORTC, 0
+0A10   3006           00581         movlw .6
+0A11   2???           00582     call delayX100msm
+0A12   1007           00583         bcf PORTC, 0
+0A13   2???           00584     call delay100ms
+0A14   1507           00585     bsf PORTC, 2
+0A15   3004           00586         movlw .4
+0A16   2???           00587     call delayX100msm
+0A17   1107           00588         bcf PORTC, 2
+0A18   2???           00589     call delay100ms
+0A19   1407           00590     bsf PORTC, 0
+0A1A   3006           00591         movlw .6
+0A1B   2???           00592     call delayX100msm
+0A1C   1007           00593         bcf PORTC, 0
+0A1D   2???           00594     call delay100ms
+0A1E   1507           00595     bsf PORTC, 2
+0A1F   3003           00596         movlw .3
+0A20   2???           00597     call delayX100msm
+0A21   300A           00598     movlw .10
+0A22   2???           00599     call delayX5msm
+0A23   1107           00600     bcf PORTC, 2
+0A24   1007           00601     bcf PORTC, 0
+                      00602 
+0A25   0008           00603     return
+0A26                  00604 run_expat6
+                      00605     ; alternating
+0A26   ???? ????      00606     pagesel delay100ms
+0A28   1107           00607     bcf PORTC, 2
+0A29   1407           00608     bsf PORTC, 0
+0A2A   3005           00609         movlw .5
+0A2B   2???           00610     call delayX100msm
+0A2C   1007           00611         bcf PORTC, 0
+0A2D   2???           00612     call delay100ms
+0A2E   1507           00613     bsf PORTC, 2
+0A2F   3009           00614         movlw .9
+0A30   2???           00615     call delayX100msm
+0A31   1107           00616     bcf PORTC, 2
+0A32   2???           00617     call delay100ms
+0A33   1407           00618     bsf PORTC, 0
+0A34   3009           00619         movlw .9
+0A35   2???           00620     call delayX100msm
+0A36   1007           00621         bcf PORTC, 0
+0A37   2???           00622     call delay100ms
+0A38   1507           00623     bsf PORTC, 2
+0A39   3009           00624         movlw .9
+0A3A   2???           00625     call delayX100msm
+0A3B   1107           00626         bcf PORTC, 2
+0A3C   2???           00627     call delay100ms
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0A3D   1407           00628     bsf PORTC, 0
+0A3E   3009           00629         movlw .9
+0A3F   2???           00630     call delayX100msm
+0A40   1007           00631         bcf PORTC, 0
+0A41   2???           00632     call delay100ms
+0A42   1507           00633     bsf PORTC, 2
+0A43   3009           00634         movlw .9
+0A44   2???           00635     call delayX100msm
+0A45   1107           00636         bcf PORTC, 2
+0A46   2???           00637     call delay100ms
+0A47   1407           00638     bsf PORTC, 0
+0A48   3009           00639         movlw .9
+0A49   2???           00640     call delayX100msm
+0A4A   1007           00641         bcf PORTC, 0
+0A4B   2???           00642     call delay100ms
+0A4C   1507           00643     bsf PORTC, 2
+0A4D   3009           00644         movlw .9
+0A4E   2???           00645     call delayX100msm
+0A4F   1107           00646         bcf PORTC, 2
+0A50   2???           00647     call delay100ms
+0A51   1407           00648     bsf PORTC, 0
+0A52   3009           00649         movlw .9
+0A53   2???           00650     call delayX100msm
+0A54   1007           00651         bcf PORTC, 0
+0A55   2???           00652     call delay100ms
+0A56   1507           00653     bsf PORTC, 2
+0A57   3009           00654         movlw .9
+0A58   2???           00655     call delayX100msm
+0A59   1107           00656     bcf PORTC, 2
+0A5A   2???           00657     call delay100ms
+0A5B   1407           00658     bsf PORTC, 0
+0A5C   3003           00659     movlw .3
+0A5D   2???           00660     call delayX100msm
+0A5E   1007           00661     bcf PORTC, 0
+0A5F   1107           00662     bcf PORTC, 2
+                      00663 
+0A60   0008           00664     return
+                      00665 ; alternating
+                      00666 
+0A61                  00667 run_eexpat1
+                      00668     ; all red
+0A61   1007           00669         bcf PORTC, 0
+0A62   1507           00670     bsf PORTC, 2
+0A63   ???? ????      00671     pagesel delay100ms
+                      00672     ;call delay100ms
+0A65   3005           00673     movlw .5
+0A66   2???           00674     call delayX100msm
+                      00675         ; call delay100ms
+0A67   1107           00676         bcf PORTC, 2
+0A68   2???           00677     call delay100ms
+0A69   1407           00678     bsf PORTC, 0
+0A6A   3003           00679         movlw .3
+0A6B   2???           00680     call delayX100msm
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00681         ; call delay1sl
+0A6C   1007           00682     bcf PORTC, 0
+0A6D   2???           00683     call delay100ms
+0A6E   1507           00684     bsf PORTC, 2
+0A6F   3005           00685         movlw .5
+0A70   2???           00686     call delayX100msm
+0A71   1107           00687     bcf PORTC, 2
+0A72   2???           00688     call delay100ms
+0A73   1407           00689     bsf PORTC, 0
+0A74   3003           00690         movlw .3
+0A75   2???           00691     call delayX100msm
+                      00692     ; call delay1sl
+0A76   1007           00693         bcf PORTC, 0
+0A77   2???           00694     call delay100ms
+0A78   1507           00695     bsf PORTC, 2
+0A79   3005           00696         movlw .5
+0A7A   2???           00697     call delayX100msm
+0A7B   1107           00698         bcf PORTC, 2
+0A7C   2???           00699     call delay100ms
+0A7D   1407           00700     bsf PORTC, 0
+0A7E   3003           00701         movlw .3
+0A7F   2???           00702     call delayX100msm
+                      00703     ; call delay1sl
+0A80   1007           00704         bcf PORTC, 0
+0A81   2???           00705     call delay100ms
+0A82   1507           00706     bsf PORTC, 2
+0A83   3005           00707         movlw .5
+0A84   2???           00708     call delayX100msm
+0A85   1107           00709         bcf PORTC, 2
+0A86   2???           00710     call delay100ms
+0A87   1407           00711     bsf PORTC, 0
+0A88   3003           00712         movlw .3
+0A89   2???           00713     call delayX100msm
+                      00714     ; call delay1sl
+0A8A   1007           00715         bcf PORTC, 0
+0A8B   2???           00716     call delay100ms
+0A8C   1507           00717     bsf PORTC, 2
+0A8D   3005           00718         movlw .5
+0A8E   2???           00719     call delayX100msm
+0A8F   1107           00720         bcf PORTC, 2
+0A90   2???           00721     call delay100ms
+0A91   1407           00722     bsf PORTC, 0
+0A92   3003           00723         movlw .3
+0A93   2???           00724     call delayX100msm
+0A94   1007           00725         bcf PORTC, 0
+0A95   2???           00726     call delay100ms
+0A96   1507           00727     bsf PORTC, 2
+0A97   3005           00728         movlw .5
+0A98   2???           00729     call delayX100msm
+0A99   1107           00730         bcf PORTC, 2
+0A9A   2???           00731     call delay100ms
+0A9B   1407           00732     bsf PORTC, 0
+0A9C   3003           00733         movlw .3
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0A9D   2???           00734     call delayX100msm
+0A9E   1007           00735     bcf PORTC, 0
+0A9F   2???           00736     call delay100ms
+0AA0   1507           00737     bsf PORTC, 2
+0AA1   3005           00738         movlw .5
+0AA2   2???           00739     call delayX100msm
+0AA3   1107           00740         bcf PORTC, 2
+0AA4   2???           00741     call delay100ms
+0AA5   1407           00742     bsf PORTC, 0
+0AA6   3003           00743         movlw .3
+0AA7   2???           00744     call delayX100msm
+0AA8   1007           00745     bcf PORTC, 0
+0AA9   2???           00746     call delay100ms
+0AAA   1507           00747     bsf PORTC, 2
+0AAB   3005           00748         movlw .5
+0AAC   2???           00749     call delayX100msm
+0AAD   1107           00750         bcf PORTC, 2
+0AAE   2???           00751     call delay100ms
+0AAF   1407           00752     bsf PORTC, 0
+0AB0   3003           00753         movlw .3
+0AB1   2???           00754     call delayX100msm
+0AB2   1007           00755         bcf PORTC, 0
+0AB3   2???           00756     call delay100ms
+0AB4   1507           00757     bsf PORTC, 2
+0AB5   3005           00758         movlw .5
+0AB6   2???           00759     call delayX100msm
+0AB7   1107           00760         bcf PORTC, 2
+0AB8   2???           00761     call delay100ms
+0AB9   1407           00762     bsf PORTC, 0
+0ABA   3003           00763         movlw .3
+0ABB   2???           00764     call delayX100msm
+0ABC   1007           00765         bcf PORTC, 0
+0ABD   2???           00766     call delay100ms
+0ABE   1507           00767     bsf PORTC, 2
+0ABF   3005           00768         movlw .5
+0AC0   2???           00769     call delayX100msm
+0AC1   1107           00770         bcf PORTC, 2
+0AC2   2???           00771     call delay100ms
+0AC3   1407           00772     bsf PORTC, 0
+0AC4   3002           00773         movlw .2
+0AC5   2???           00774     call delayX100msm
+0AC6   3005           00775     movlw .5
+0AC7   2???           00776     call delayX5msm
+0AC8   1107           00777     bcf PORTC, 2
+0AC9   1007           00778     bcf PORTC, 0
+0ACA   0008           00779     return
+0ACB                  00780 run_eexpat2
+                      00781     ; all white
+0ACB   1107           00782     bcf PORTC, 2
+0ACC   1407           00783     bsf PORTC, 0
+0ACD   ???? ????      00784     pagesel delay100ms
+                      00785     ;call delay100ms
+0ACF   3006           00786     movlw .6
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0AD0   2???           00787     call delayX100msm
+                      00788         ; call delay100ms
+0AD1   1007           00789         bcf PORTC, 0
+0AD2   2???           00790     call delay100ms
+0AD3   1507           00791     bsf PORTC, 2
+0AD4   3004           00792         movlw .4
+0AD5   2???           00793     call delayX100msm
+                      00794         ; call delay1sl
+0AD6   1107           00795     bcf PORTC, 2
+0AD7   2???           00796     call delay100ms
+0AD8   1407           00797     bsf PORTC, 0
+0AD9   3006           00798         movlw .6
+0ADA   2???           00799     call delayX100msm
+0ADB   1007           00800     bcf PORTC, 0
+0ADC   2???           00801     call delay100ms
+0ADD   1507           00802     bsf PORTC, 2
+0ADE   3004           00803         movlw .4
+0ADF   2???           00804     call delayX100msm
+                      00805     ; call delay1sl
+0AE0   1107           00806         bcf PORTC, 2
+0AE1   2???           00807     call delay100ms
+0AE2   1407           00808     bsf PORTC, 0
+0AE3   3006           00809         movlw .6
+0AE4   2???           00810     call delayX100msm
+0AE5   1007           00811         bcf PORTC, 0
+0AE6   2???           00812     call delay100ms
+0AE7   1507           00813     bsf PORTC, 2
+0AE8   3004           00814         movlw .4
+0AE9   2???           00815     call delayX100msm
+                      00816     ; call delay1sl
+0AEA   1107           00817         bcf PORTC, 2
+0AEB   2???           00818     call delay100ms
+0AEC   1407           00819     bsf PORTC, 0
+0AED   3006           00820         movlw .6
+0AEE   2???           00821     call delayX100msm
+0AEF   1007           00822         bcf PORTC, 0
+0AF0   2???           00823     call delay100ms
+0AF1   1507           00824     bsf PORTC, 2
+0AF2   3004           00825         movlw .4
+0AF3   2???           00826     call delayX100msm
+                      00827     ; call delay1sl
+0AF4   1107           00828         bcf PORTC, 2
+0AF5   2???           00829     call delay100ms
+0AF6   1407           00830     bsf PORTC, 0
+0AF7   3006           00831         movlw .6
+0AF8   2???           00832     call delayX100msm
+0AF9   1007           00833         bcf PORTC, 0
+0AFA   2???           00834     call delay100ms
+0AFB   1507           00835     bsf PORTC, 2
+0AFC   3003           00836         movlw .3
+0AFD   2???           00837     call delayX100msm
+0AFE   1107           00838         bcf PORTC, 2
+0AFF   2???           00839     call delay100ms
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0B00   1407           00840     bsf PORTC, 0
+0B01   3006           00841         movlw .6
+0B02   2???           00842     call delayX100msm
+0B03   1007           00843         bcf PORTC, 0
+0B04   2???           00844     call delay100ms
+0B05   1507           00845     bsf PORTC, 2
+0B06   3003           00846         movlw .3
+0B07   2???           00847     call delayX100msm
+0B08   1107           00848     bcf PORTC, 2
+0B09   2???           00849     call delay100ms
+0B0A   1407           00850     bsf PORTC, 0
+0B0B   3006           00851         movlw .6
+0B0C   2???           00852     call delayX100msm
+0B0D   1007           00853         bcf PORTC, 0
+0B0E   2???           00854     call delay100ms
+0B0F   1507           00855     bsf PORTC, 2
+0B10   3003           00856         movlw .3
+0B11   2???           00857     call delayX100msm
+0B12   1107           00858     bcf PORTC, 2
+0B13   2???           00859     call delay100ms
+0B14   1407           00860     bsf PORTC, 0
+0B15   3006           00861         movlw .6
+0B16   2???           00862     call delayX100msm
+0B17   1007           00863         bcf PORTC, 0
+0B18   2???           00864     call delay100ms
+0B19   1507           00865     bsf PORTC, 2
+0B1A   3003           00866         movlw .3
+0B1B   2???           00867     call delayX100msm
+0B1C   1107           00868         bcf PORTC, 2
+0B1D   2???           00869     call delay100ms
+0B1E   1407           00870     bsf PORTC, 0
+0B1F   3006           00871         movlw .6
+0B20   2???           00872     call delayX100msm
+0B21   1007           00873         bcf PORTC, 0
+0B22   2???           00874     call delay100ms
+0B23   1507           00875     bsf PORTC, 2
+0B24   3003           00876         movlw .3
+0B25   2???           00877     call delayX100msm
+0B26   1107           00878         bcf PORTC, 2
+0B27   2???           00879     call delay100ms
+0B28   1407           00880     bsf PORTC, 0
+0B29   3006           00881         movlw .6
+0B2A   2???           00882     call delayX100msm
+0B2B   1007           00883         bcf PORTC, 0
+0B2C   2???           00884     call delay100ms
+0B2D   1507           00885     bsf PORTC, 2
+0B2E   3001           00886         movlw .1
+0B2F   2???           00887     call delayX100msm
+                      00888     ;movlw .10
+                      00889     ;call delayX5msm
+0B30   1107           00890     bcf PORTC, 2
+0B31   1007           00891     bcf PORTC, 0
+0B32   0008           00892         return
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0B33                  00893 run_eexpat3
+                      00894     ; all white top all red bottom
+0B33   ???? ????      00895     pagesel delay100ms
+0B35   1007           00896     bcf PORTC, 0
+0B36   1507           00897     bsf PORTC, 2
+0B37   3006           00898         movlw .6
+0B38   2???           00899     call delayX100msm
+0B39   2???           00900     call delay100ms
+0B3A   1107           00901         bcf PORTC, 2
+0B3B   2???           00902     call delay100ms
+0B3C   1407           00903     bsf PORTC, 0
+0B3D   3004           00904     movlw .4
+0B3E   2???           00905     call delayX100msm
+0B3F   1007           00906         bcf PORTC, 0
+0B40   2???           00907     call delay100ms
+0B41   1507           00908     bsf PORTC, 2
+0B42   3006           00909         movlw .6
+0B43   2???           00910     call delayX100msm
+0B44   1107           00911         bcf PORTC, 2
+0B45   2???           00912     call delay100ms
+0B46   1407           00913     bsf PORTC, 0
+0B47   3004           00914     movlw .4
+0B48   2???           00915     call delayX100msm
+0B49   1007           00916         bcf PORTC, 0
+0B4A   2???           00917     call delay100ms
+0B4B   1507           00918     bsf PORTC, 2
+0B4C   3006           00919         movlw .6
+0B4D   2???           00920     call delayX100msm
+0B4E   1107           00921         bcf PORTC, 2
+0B4F   2???           00922     call delay100ms
+0B50   1407           00923     bsf PORTC, 0
+0B51   3004           00924     movlw .4
+0B52   2???           00925     call delayX100msm
+0B53   1007           00926         bcf PORTC, 0
+0B54   2???           00927     call delay100ms
+0B55   1507           00928     bsf PORTC, 2
+0B56   3006           00929         movlw .6
+0B57   2???           00930     call delayX100msm
+0B58   1107           00931         bcf PORTC, 2
+0B59   2???           00932     call delay100ms
+0B5A   1407           00933     bsf PORTC, 0
+0B5B   3004           00934     movlw .4
+0B5C   2???           00935     call delayX100msm
+0B5D   1007           00936     bcf PORTC, 0
+0B5E   2???           00937     call delay100ms
+0B5F   1507           00938     bsf PORTC, 2
+0B60   3006           00939         movlw .6
+0B61   2???           00940     call delayX100msm
+0B62   1107           00941         bcf PORTC, 2
+0B63   2???           00942     call delay100ms
+0B64   1407           00943     bsf PORTC, 0
+0B65   3004           00944         movlw .4
+0B66   2???           00945     call delayX100msm
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 21
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0B67   1107           00946         bcf PORTC, 2
+0B68   2???           00947     call delay100ms
+0B69   1407           00948     bsf PORTC, 0
+0B6A   3006           00949         movlw .6
+0B6B   2???           00950     call delayX100msm
+0B6C   1007           00951         bcf PORTC, 0
+0B6D   2???           00952     call delay100ms
+0B6E   1507           00953     bsf PORTC, 2
+0B6F   3004           00954         movlw .4
+0B70   2???           00955     call delayX100msm
+0B71   1107           00956         bcf PORTC, 2
+0B72   2???           00957     call delay100ms
+0B73   1407           00958     bsf PORTC, 0
+0B74   3006           00959         movlw .6
+0B75   2???           00960     call delayX100msm
+0B76   1007           00961         bcf PORTC, 0
+0B77   2???           00962     call delay100ms
+0B78   1507           00963     bsf PORTC, 2
+0B79   3003           00964         movlw .3
+0B7A   2???           00965     call delayX100msm
+0B7B   1107           00966         bcf PORTC, 2
+0B7C   2???           00967     call delay100ms
+0B7D   1407           00968     bsf PORTC, 0
+0B7E   3006           00969         movlw .6
+0B7F   2???           00970     call delayX100msm
+0B80   1007           00971         bcf PORTC, 0
+0B81   2???           00972     call delay100ms
+0B82   1507           00973     bsf PORTC, 2
+0B83   3003           00974         movlw .3
+0B84   2???           00975     call delayX100msm
+0B85   1107           00976         bcf PORTC, 2
+0B86   2???           00977     call delay100ms
+0B87   1407           00978     bsf PORTC, 0
+0B88   3006           00979         movlw .6
+0B89   2???           00980     call delayX100msm
+0B8A   1007           00981         bcf PORTC, 0
+0B8B   2???           00982     call delay100ms
+0B8C   1507           00983     bsf PORTC, 2
+0B8D   3003           00984         movlw .3
+0B8E   2???           00985     call delayX100msm
+0B8F   1107           00986         bcf PORTC, 2
+0B90   2???           00987     call delay100ms
+0B91   1407           00988     bsf PORTC, 0
+0B92   3006           00989         movlw .6
+0B93   2???           00990     call delayX100msm
+0B94   1007           00991         bcf PORTC, 0
+0B95   2???           00992     call delay100ms
+0B96   1507           00993     bsf PORTC, 2
+0B97   3001           00994         movlw .1
+0B98   2???           00995     call delayX100msm
+0B99   300A           00996     movlw .10
+0B9A   2???           00997     call delayX5msm
+0B9B   1107           00998     bcf PORTC, 2
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 22
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00999     ;call delay100ms
+0B9C   1007           01000     bcf PORTC, 0
+0B9D   0008           01001     return
+0B9E                  01002 run_eexpat4
+                      01003     ; alternating two's (white top)
+0B9E   ???? ????      01004     pagesel delay100ms
+0BA0   1007           01005         bcf PORTC, 0
+0BA1   1507           01006     bsf PORTC, 2
+0BA2   3006           01007         movlw .6
+0BA3   2???           01008     call delayX100msm
+0BA4   1107           01009         bcf PORTC, 2
+0BA5   2???           01010     call delay100ms
+0BA6   1407           01011     bsf PORTC, 0
+0BA7   3003           01012     movlw .3
+0BA8   2???           01013     call delayX100msm
+0BA9   300A           01014     movlw .10
+0BAA   2???           01015     call delayX5msm
+0BAB   1007           01016         bcf PORTC, 0
+0BAC   2???           01017     call delay100ms
+0BAD   1507           01018     bsf PORTC, 2
+0BAE   3006           01019         movlw .6
+0BAF   2???           01020     call delayX100msm
+0BB0   1107           01021         bcf PORTC, 2
+0BB1   2???           01022     call delay100ms
+0BB2   1407           01023     bsf PORTC, 0
+0BB3   3003           01024         movlw .3
+0BB4   2???           01025     call delayX100msm
+0BB5   300A           01026     movlw .10
+0BB6   2???           01027     call delayX5msm
+0BB7   1107           01028         bcf PORTC, 2
+0BB8   2???           01029     call delay100ms
+0BB9   1407           01030     bsf PORTC, 0
+0BBA   3006           01031         movlw .6
+0BBB   2???           01032     call delayX100msm
+0BBC   1007           01033         bcf PORTC, 0
+0BBD   2???           01034     call delay100ms
+0BBE   1507           01035     bsf PORTC, 2
+0BBF   3003           01036     movlw .3
+0BC0   2???           01037     call delayX100msm
+0BC1   300A           01038     movlw .10
+0BC2   2???           01039     call delayX5msm
+0BC3   1107           01040         bcf PORTC, 2
+0BC4   2???           01041     call delay100ms
+0BC5   1407           01042     bsf PORTC, 0
+0BC6   3006           01043         movlw .6
+0BC7   2???           01044     call delayX100msm
+0BC8   1007           01045         bcf PORTC, 0
+0BC9   2???           01046     call delay100ms
+0BCA   1507           01047     bsf PORTC, 2
+0BCB   3003           01048         movlw .3
+0BCC   2???           01049     call delayX100msm
+0BCD   1007           01050         bcf PORTC, 0
+0BCE   2???           01051     call delay100ms
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 23
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0BCF   1507           01052     bsf PORTC, 2
+0BD0   3006           01053         movlw .6
+0BD1   2???           01054     call delayX100msm
+0BD2   1107           01055         bcf PORTC, 2
+0BD3   2???           01056     call delay100ms
+0BD4   1407           01057     bsf PORTC, 0
+0BD5   3003           01058     movlw .3
+0BD6   2???           01059     call delayX100msm
+0BD7   1007           01060         bcf PORTC, 0
+0BD8   2???           01061     call delay100ms
+0BD9   1507           01062     bsf PORTC, 2
+0BDA   3006           01063         movlw .6
+0BDB   2???           01064     call delayX100msm
+0BDC   1107           01065         bcf PORTC, 2
+0BDD   2???           01066     call delay100ms
+0BDE   1407           01067     bsf PORTC, 0
+0BDF   3003           01068         movlw .3
+0BE0   2???           01069     call delayX100msm
+0BE1   1107           01070         bcf PORTC, 2
+0BE2   2???           01071     call delay100ms
+0BE3   1407           01072     bsf PORTC, 0
+0BE4   3006           01073         movlw .6
+0BE5   2???           01074     call delayX100msm
+0BE6   1007           01075         bcf PORTC, 0
+0BE7   2???           01076     call delay100ms
+0BE8   1507           01077     bsf PORTC, 2
+0BE9   3003           01078     movlw .3
+0BEA   2???           01079     call delayX100msm
+0BEB   1107           01080         bcf PORTC, 2
+0BEC   2???           01081     call delay100ms
+0BED   1407           01082     bsf PORTC, 0
+0BEE   3006           01083         movlw .6
+0BEF   2???           01084     call delayX100msm
+0BF0   1007           01085         bcf PORTC, 0
+0BF1   2???           01086     call delay100ms
+0BF2   1507           01087     bsf PORTC, 2
+0BF3   3003           01088         movlw .3
+0BF4   2???           01089     call delayX100msm
+0BF5   1007           01090         bcf PORTC, 0
+0BF6   2???           01091     call delay100ms
+0BF7   1507           01092     bsf PORTC, 2
+0BF8   3006           01093         movlw .6
+0BF9   2???           01094     call delayX100msm
+0BFA   1107           01095         bcf PORTC, 2
+0BFB   2???           01096     call delay100ms
+0BFC   1407           01097     bsf PORTC, 0
+0BFD   3003           01098         movlw .3
+0BFE   2???           01099     call delayX100msm
+0BFF   1007           01100         bcf PORTC, 0
+0C00   2???           01101     call delay100ms
+0C01   1507           01102     bsf PORTC, 2
+0C02   3006           01103         movlw .6
+0C03   2???           01104     call delayX100msm
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 24
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0C04   1107           01105         bcf PORTC, 2
+0C05   2???           01106     call delay100ms
+0C06   1407           01107     bsf PORTC, 0
+0C07   3002           01108         movlw .2
+0C08   2???           01109     call delayX100msm
+0C09   300E           01110     movlw .14
+0C0A   2???           01111     call delayX5msm
+0C0B   1107           01112     bcf PORTC, 2
+0C0C   1007           01113     bcf PORTC, 0
+0C0D   0008           01114     return
+0C0E                  01115 run_eexpat5
+                      01116       ; alternating two's (red top)
+0C0E   ???? ????      01117     pagesel delay100ms
+0C10   1107           01118         bcf PORTC, 2
+0C11   1407           01119     bsf PORTC, 0
+0C12   3006           01120         movlw .6
+0C13   2???           01121     call delayX100msm
+0C14   1007           01122         bcf PORTC, 0
+0C15   2???           01123     call delay100ms
+0C16   1507           01124     bsf PORTC, 2
+0C17   3003           01125     movlw .3
+0C18   2???           01126     call delayX100msm
+0C19   300A           01127     movlw .10
+0C1A   2???           01128     call delayX5msm
+0C1B   1107           01129         bcf PORTC, 2
+0C1C   2???           01130     call delay100ms
+0C1D   1407           01131     bsf PORTC, 0
+0C1E   3006           01132         movlw .6
+0C1F   2???           01133     call delayX100msm
+0C20   1007           01134         bcf PORTC, 0
+0C21   2???           01135     call delay100ms
+0C22   1507           01136     bsf PORTC, 2
+0C23   3003           01137         movlw .3
+0C24   2???           01138     call delayX100msm
+0C25   300A           01139     movlw .10
+0C26   2???           01140     call delayX5msm
+0C27   1007           01141         bcf PORTC, 0
+0C28   2???           01142     call delay100ms
+0C29   1507           01143     bsf PORTC, 2
+0C2A   3006           01144         movlw .6
+0C2B   2???           01145     call delayX100msm
+0C2C   1107           01146         bcf PORTC, 2
+0C2D   2???           01147     call delay100ms
+0C2E   1407           01148     bsf PORTC, 0
+0C2F   3003           01149     movlw .3
+0C30   2???           01150     call delayX100msm
+0C31   300A           01151     movlw .10
+0C32   2???           01152     call delayX5msm
+0C33   1007           01153         bcf PORTC, 0
+0C34   2???           01154     call delay100ms
+0C35   1507           01155     bsf PORTC, 2
+0C36   3006           01156         movlw .6
+0C37   2???           01157     call delayX100msm
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 25
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0C38   1107           01158         bcf PORTC, 2
+0C39   2???           01159     call delay100ms
+0C3A   1407           01160     bsf PORTC, 0
+0C3B   3003           01161         movlw .3
+0C3C   2???           01162     call delayX100msm
+0C3D   1107           01163         bcf PORTC, 2
+0C3E   2???           01164     call delay100ms
+0C3F   1407           01165     bsf PORTC, 0
+0C40   3006           01166         movlw .6
+0C41   2???           01167     call delayX100msm
+0C42   1007           01168         bcf PORTC, 0
+0C43   2???           01169     call delay100ms
+0C44   1507           01170     bsf PORTC, 2
+0C45   3003           01171     movlw .3
+0C46   2???           01172     call delayX100msm
+0C47   1107           01173         bcf PORTC, 2
+0C48   2???           01174     call delay100ms
+0C49   1407           01175     bsf PORTC, 0
+0C4A   3006           01176         movlw .6
+0C4B   2???           01177     call delayX100msm
+0C4C   1007           01178         bcf PORTC, 0
+0C4D   2???           01179     call delay100ms
+0C4E   1507           01180     bsf PORTC, 2
+0C4F   3003           01181         movlw .3
+0C50   2???           01182     call delayX100msm
+0C51   1007           01183         bcf PORTC, 0
+0C52   2???           01184     call delay100ms
+0C53   1507           01185     bsf PORTC, 2
+0C54   3006           01186         movlw .6
+0C55   2???           01187     call delayX100msm
+0C56   1107           01188         bcf PORTC, 2
+0C57   2???           01189     call delay100ms
+0C58   1407           01190     bsf PORTC, 0
+0C59   3003           01191     movlw .3
+0C5A   2???           01192     call delayX100msm
+0C5B   1007           01193         bcf PORTC, 0
+0C5C   2???           01194     call delay100ms
+0C5D   1507           01195     bsf PORTC, 2
+0C5E   3006           01196         movlw .6
+0C5F   2???           01197     call delayX100msm
+0C60   1107           01198         bcf PORTC, 2
+0C61   2???           01199     call delay100ms
+0C62   1407           01200     bsf PORTC, 0
+0C63   3003           01201         movlw .3
+0C64   2???           01202     call delayX100msm
+0C65   1107           01203         bcf PORTC, 2
+0C66   2???           01204     call delay100ms
+0C67   1407           01205     bsf PORTC, 0
+0C68   3006           01206         movlw .6
+0C69   2???           01207     call delayX100msm
+0C6A   1007           01208         bcf PORTC, 0
+0C6B   2???           01209     call delay100ms
+0C6C   1507           01210     bsf PORTC, 2
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 26
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0C6D   3003           01211         movlw .3
+0C6E   2???           01212     call delayX100msm
+0C6F   1107           01213         bcf PORTC, 2
+0C70   2???           01214     call delay100ms
+0C71   1407           01215     bsf PORTC, 0
+0C72   3006           01216         movlw .6
+0C73   2???           01217     call delayX100msm
+0C74   1007           01218         bcf PORTC, 0
+0C75   2???           01219     call delay100ms
+0C76   1507           01220     bsf PORTC, 2
+0C77   3001           01221         movlw .1
+0C78   2???           01222     call delayX100msm
+0C79   300F           01223     movlw .15
+0C7A   2???           01224     call delayX5msm
+0C7B   1107           01225     bcf PORTC, 2
+0C7C   1007           01226     bcf PORTC, 0
+0C7D   0008           01227     return
+0C7E                  01228 run_eexpat6
+                      01229     ; alternating
+0C7E   ???? ????      01230     pagesel delay100ms
+0C80   1107           01231     bcf PORTC, 2
+0C81   1407           01232     bsf PORTC, 0
+0C82   3006           01233         movlw .6
+0C83   2???           01234     call delayX100msm
+0C84   1007           01235         bcf PORTC, 0
+0C85   2???           01236     call delay100ms
+0C86   1507           01237     bsf PORTC, 2
+0C87   3003           01238         movlw .3
+0C88   2???           01239     call delayX100msm
+0C89   1107           01240     bcf PORTC, 2
+0C8A   2???           01241     call delay100ms
+0C8B   1507           01242     bsf PORTC, 2
+0C8C   3006           01243         movlw .6
+0C8D   2???           01244     call delayX100msm
+0C8E   1107           01245     bcf PORTC, 2
+0C8F   2???           01246     call delay100ms
+0C90   1407           01247     bsf PORTC, 0
+0C91   3003           01248         movlw .3
+0C92   2???           01249     call delayX100msm
+0C93   1007           01250         bcf PORTC, 0
+0C94   2???           01251     call delay100ms
+0C95   1407           01252     bsf PORTC, 0
+0C96   3006           01253         movlw .6
+0C97   2???           01254     call delayX100msm
+0C98   1007           01255         bcf PORTC, 0
+0C99   2???           01256     call delay100ms
+0C9A   1507           01257     bsf PORTC, 2
+0C9B   3003           01258         movlw .3
+0C9C   2???           01259     call delayX100msm
+0C9D   1107           01260         bcf PORTC, 2
+0C9E   2???           01261     call delay100ms
+0C9F   1507           01262     bsf PORTC, 2
+0CA0   3006           01263         movlw .6
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 27
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0CA1   2???           01264     call delayX100msm
+0CA2   1107           01265         bcf PORTC, 2
+0CA3   2???           01266     call delay100ms
+0CA4   1407           01267     bsf PORTC, 0
+0CA5   3003           01268         movlw .3
+0CA6   2???           01269     call delayX100msm
+0CA7   1007           01270         bcf PORTC, 0
+0CA8   2???           01271     call delay100ms
+0CA9   1407           01272     bsf PORTC, 0
+0CAA   3006           01273         movlw .6
+0CAB   2???           01274     call delayX100msm
+0CAC   1007           01275         bcf PORTC, 0
+0CAD   2???           01276     call delay100ms
+0CAE   1507           01277     bsf PORTC, 2
+0CAF   3002           01278         movlw .2
+0CB0   2???           01279     call delayX100msm
+0CB1   1107           01280         bcf PORTC, 2
+0CB2   2???           01281     call delay100ms
+0CB3   1507           01282     bsf PORTC, 2
+0CB4   3006           01283         movlw .6
+0CB5   2???           01284     call delayX100msm
+0CB6   1107           01285         bcf PORTC, 2
+0CB7   2???           01286     call delay100ms
+0CB8   1407           01287     bsf PORTC, 0
+0CB9   3002           01288         movlw .2
+0CBA   2???           01289     call delayX100msm
+0CBB   1007           01290         bcf PORTC, 0
+0CBC   2???           01291     call delay100ms
+0CBD   1407           01292     bsf PORTC, 0
+0CBE   3006           01293         movlw .6
+0CBF   2???           01294     call delayX100msm
+0CC0   1007           01295         bcf PORTC, 0
+0CC1   2???           01296     call delay100ms
+0CC2   1507           01297     bsf PORTC, 2
+0CC3   3002           01298         movlw .2
+0CC4   2???           01299     call delayX100msm
+0CC5   1107           01300         bcf PORTC, 2
+0CC6   2???           01301     call delay100ms
+0CC7   1507           01302     bsf PORTC, 2
+0CC8   3006           01303         movlw .6
+0CC9   2???           01304     call delayX100msm
+0CCA   1107           01305         bcf PORTC, 2
+0CCB   2???           01306     call delay100ms
+0CCC   1407           01307     bsf PORTC, 0
+0CCD   3002           01308         movlw .2
+0CCE   2???           01309     call delayX100msm
+0CCF   1007           01310         bcf PORTC, 0
+0CD0   2???           01311     call delay100ms
+0CD1   1407           01312     bsf PORTC, 0
+0CD2   3006           01313         movlw .6
+0CD3   2???           01314     call delayX100msm
+0CD4   1007           01315         bcf PORTC, 0
+0CD5   2???           01316     call delay100ms
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 28
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0CD6   1507           01317     bsf PORTC, 2
+0CD7   3002           01318         movlw .2
+0CD8   2???           01319     call delayX100msm
+0CD9   1107           01320     bcf PORTC, 2
+0CDA   2???           01321     call delay100ms
+0CDB   1507           01322     bsf PORTC, 2
+0CDC   3006           01323         movlw .6
+0CDD   2???           01324     call delayX100msm
+0CDE   1107           01325     bcf PORTC, 2
+0CDF   2???           01326     call delay100ms
+0CE0   1407           01327     bsf PORTC, 0
+0CE1   3003           01328     movlw .3
+0CE2   2???           01329     call delayX100msm
+0CE3   1007           01330     bcf PORTC, 0
+0CE4   1107           01331     bcf PORTC, 2
+0CE5   0008           01332     return
+                      01333 
+                      01334     end
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 29
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000006
+ADCS1                             00000007
+ADDEN                             00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+BANK0                             
+BANK00                            
+BANK1                             
+BCLIE                             00000003
+BCLIF                             00000003
+BF                                00000000
+BRGH                              00000002
+C                                 00000000
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           0000001D
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCPR1                             00000015
+CCPR1H                            00000016
+CCPR1L                            00000015
+CCPR2                             0000001B
+CCPR2H                            0000001C
+CCPR2L                            0000001B
+CHS0                              00000003
+CHS1                              00000004
+CHS2                              00000005
+CKE                               00000006
+CKP                               00000004
+CL_ERR_BIT                        2
+CL_FN_BIT                         1
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 30
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CL_POS_BIT                        0
+COLS                              00000005
+CREN                              00000004
+CSRC                              00000007
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+DCDOWNDELAY                       0000001E
+DEBUG                             
+DELAY_1500MS                      
+DELAY_1800MS                      
+DELAY_2500MS                      
+D_A                               00000005
+D_NOT_A                           00000005
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+F                                 00000001
+FALSE                             0x00
+FB_ROW4                           PORTC, 7
+FCALL                             
+FERR                              00000002
+FSNUM                             00000002
+FSR                               00000004
+GCEN                              00000007
+GIE                               00000007
+GO                                00000002
+GO_DONE                           00000002
+GO_NOT_DONE                       00000002
+I2C_DATA                          00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+IBF                               00000007
+IBOV                              00000005
+INDF                              00000000
+INITVAL_ADCON0                    B'10000001'
+INITVAL_ADCON1                    B'00000100'
+INITVAL_OPTREG                    B'10000101'
+INITVAL_TRISA                     B'00101111'
+INITVAL_TRISB                     B'11110010'
+INITVAL_TRISC                     B'11100000'
+INITVAL_TRISD                     B'00000000'
+INITVAL_TRISE                     B'00000000'
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 31
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+INTF                              00000001
+IRP                               00000007
+KEYPAD_DA                         PORTB, 1
+LCD_E                             PORTD, 3
+LCD_PORT                          PORTD
+LCD_RS                            PORTD, 2
+LIGHTAVGX                         00000004
+LOGLENGTH                         00000010
+MAXCLINROW                        00000003
+MAXLINE                           00000006
+MAXLOG                            0000000C
+MAXLOGBANK                        00000006
+MAXPOS                            00000014
+MOVFF                             
+MOVLF                             
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000002
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RC8                           00000006
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_TX8                           00000006
+NOT_W                             00000002
+NOT_WRITE                         00000002
+NULL                              0x00
+OBF                               00000006
+OERR                              00000001
+OPTION_REG                        00000081
+P                                 00000004
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+PEN                               00000002
+PHASE_FINISH                      6
+PHASE_HDINIT                      0
+PHASE_NOREPORT                    3
+PHASE_REALTIME                    2
+PHASE_REPORT                      4
+PHASE_RTCINIT                     1
+PHASE_RUN                         5
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 32
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PIR2                              0000000D
+PMOTOR                            PORTC, 1
+PORTA                             00000005
+PORTB                             00000006
+PORTC                             00000007
+PORTD                             00000008
+PORTE                             00000009
+PR2                               00000092
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+PSPIE                             00000007
+PSPIF                             00000007
+PSPMODE                           00000004
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RC8_9                             00000006
+RC9                               00000006
+RCD8                              00000000
+RCEN                              00000003
+RCIE                              00000005
+RCIF                              00000005
+RCREG                             0000001A
+RCSTA                             00000018
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD2                               00000002
+RD3                               00000003
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 33
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+READ_WRITE                        00000002
+ROWS                              00000004
+RP0                               00000005
+RP1                               00000006
+RSEN                              00000001
+RX9                               00000006
+RX9D                              00000000
+R_NOT_W                           00000002
+R_W                               00000002
+S                                 00000003
+SEN                               00000000
+SMOTOR_EN                         PORTE, 2
+SMOTOR_S0                         PORTD, 0
+SMOTOR_S1                         PORTD, 1
+SMOTOR_S2                         PORTE, 0
+SMOTOR_S3                         PORTE, 1
+SMOTOR_SPD_F                      00000006
+SMOTOR_STEPS                      0000001C
+SMP                               00000007
+SPBRG                             00000099
+SPEN                              00000007
+SREN                              00000005
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPCON2                           00000091
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+STOP_BUT                          0x0B
+SWMOTOR                           PORTC, 0
+SYNC                              00000004
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 34
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+T1INSYNC                          00000002
+T1OSCEN                           00000003
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+THD_BG                            00000005
+THD_CL3LED                        00000050
+THD_IRLED                         0000001C
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR1                              0000000E
+TMR1CS                            00000001
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000087
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000088
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 35
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000089
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TRUE                              0xFF
+TX8_9                             00000006
+TX9                               00000006
+TX9D                              00000000
+TXD8                              00000000
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             00000019
+TXSTA                             00000098
+UA                                00000001
+VMOTOR_C0                         PORTC, 2
+VMOTOR_C1                         PORTC, 3
+W                                 00000000
+WCOL                              00000007
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_BOREN_OFF                        00003FBF
+_BOREN_ON                         00003FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_ALL                           00000FCF
+_CP_HALF                          00001FDF
+_CP_OFF                           00003FFF
+_CP_UPPER_256                     00002FEF
+_DEBUG_OFF                        00003FFF
+_DEBUG_ON                         000037FF
+_DEVID1                           00002006
+_FOSC_EXTRC                       00003FFF
+_FOSC_HS                          00003FFE
+_FOSC_LP                          00003FFC
+_FOSC_XT                          00003FFD
+_HS_OSC                           00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+MPASM  5.48                         MOTOR.ASM   4-9-2013  10:29:02         PAGE 36
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LP_OSC                           00003FFC
+_LVP_OFF                          00003F7F
+_LVP_ON                           00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_RC_OSC                           00003FFF
+_WDTE_OFF                         00003FFB
+_WDTE_ON                          00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+_WRT_ENABLE_OFF                   00003DFF
+_WRT_ENABLE_ON                    00003FFF
+_WRT_OFF                          00003DFF
+_WRT_ON                           00003FFF
+_XT_OSC                           00003FFD
+__16F877                          00000001
+delay100ms                        00000000
+delay1sl                          00000000
+delay50us                         00000000
+delay5ms                          00000000
+delayX100msm                      00000000
+delayX5msm                        00000000
+run_eexpat1                       00000A61
+run_eexpat2                       00000ACB
+run_eexpat3                       00000B33
+run_eexpat4                       00000B9E
+run_eexpat5                       00000C0E
+run_eexpat6                       00000C7E
+run_expat1                        00000800
+run_expat2                        0000086A
+run_expat3                        000008E6
+run_expat4                        00000950
+run_expat5                        000009BA
+run_expat6                        00000A26
+
+Errors   :     0
+Warnings :     3 reported,     0 suppressed
+Messages :     0 reported,     0 suppressed
+
+

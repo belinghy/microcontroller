@@ -1,0 +1,376 @@
+; bsf PORTC, 0 is cw
+; bsf PORTC, 2 is ccw
+; right reservoir white
+; left reservoir red
+run_eexpat1
+; all red
+	bcf PORTC, 0
+    bsf PORTC, 2
+    call delay100ms
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+    bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+    bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+   	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+    call delay1sl
+	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+  	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+    bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+    bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+   	bcf PORTC, 0                
+    bsf PORTC, 2
+	call delay1sl
+	bcf PORTC, 2               
+    bsf PORTC, 0
+	call delay1sl
+   	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+   	return
+run_eexpat2
+; all white
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+    call delay100ms
+	call delay100ms
+	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	call delay1sl
+    bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+    bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	call delay1sl
+    bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+    bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	call delay1sl
+    bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+    bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+	call delay1sl
+    bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+    bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+    bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+    bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+    bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+    bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	return
+run_eexpat3
+; all white top all red bottom
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+    call delay100ms
+	call delay100ms
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+	call delay1sl
+    bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	return
+run_eexpat4
+; alternating two's (white top)
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_1800MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_1800MS
+	return
+run_eexpat5
+; alternating two's (red top)
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+    call delay100ms
+	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	call delay1sl
+    call delay1sl
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_1800MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	return
+run_eexpat6
+; alternating
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+    call delay100ms
+    call delay100ms
+    call delay100ms
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_2500MS
+	bcf PORTC, 2
+    bsf PORTC, 0
+	DELAY_2500MS
+	bcf PORTC, 0
+    bsf PORTC, 2
+	DELAY_1800MS
+	return

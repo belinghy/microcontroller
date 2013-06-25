@@ -1,4 +1,4 @@
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE  1
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -57,7 +57,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00039         #define INITVAL_TRISD B'00000000'
                       00040         #define INITVAL_TRISE B'00000000'
                       00041         #define INITVAL_ADCON0 B'10000001' ; 32Tosc, AN0, ADC on
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE  2
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -116,7 +116,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00092         
 Warning[205]: Found directive in column 1. (cblock)
                       00003 cblock 0xA0
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE  3
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -175,7 +175,7 @@ Message[302]: Register in operand not in bank 0.  Ensure that bank bits are corr
                       00047 ;*******************************************************************************
 000B                  00048 delay5ms
                       00049         ; call function cost 2 cycles
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE  4
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE  4
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -234,7 +234,7 @@ Message[302]: Register in operand not in bank 0.  Ensure that bank bits are corr
 0027   0000           00090         nop
 0028   0008           00091         return ; 2 cycles
                       00092 ;*******************************************************************************
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE  5
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE  5
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -293,7 +293,7 @@ Message[302]: Register in operand not in bank 0.  Ensure that bank bits are corr
 0039   30FA           00139         movlw 0xFA ; 250, 1 cycle
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
 003A   00A1           00140         movwf delaycount ; 1 cycle
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE  6
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE  6
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -352,7 +352,7 @@ Message[302]: Register in operand not in bank 0.  Ensure that bank bits are corr
                       00185 ; including the time this function being called
                       00186 ; Input: None
                       00187 ; Output: None
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE  7
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE  7
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -401,7 +401,7 @@ Message[302]: Register in operand not in bank 0.  Ensure that bank bits are corr
 0061   0000           00222         nop
 0062   0008           00223         return ; 2 cycles
                       00224         end
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE  8
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE  8
 
 
 SYMBOL TABLE
@@ -460,7 +460,7 @@ CKE                               00000006
 CKP                               00000004
 CL_ERR_BIT                        2
 CL_FN_BIT                         1
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE  9
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE  9
 
 
 SYMBOL TABLE
@@ -519,7 +519,7 @@ INTF                              00000001
 IRLED                             PORTC, 2
 IRP                               00000007
 KEYPAD_DA                         PORTB, 1
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE 10
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE 10
 
 
 SYMBOL TABLE
@@ -578,7 +578,7 @@ PIR1                              0000000C
 PIR2                              0000000D
 PORTA                             00000005
 PORTB                             00000006
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE 11
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE 11
 
 
 SYMBOL TABLE
@@ -637,7 +637,7 @@ RD4                               00000004
 RD5                               00000005
 RD6                               00000006
 RD7                               00000007
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE 12
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE 12
 
 
 SYMBOL TABLE
@@ -696,7 +696,7 @@ T1OSCEN                           00000003
 T1SYNC                            00000002
 T2CKPS0                           00000000
 T2CKPS1                           00000001
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE 13
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE 13
 
 
 SYMBOL TABLE
@@ -755,7 +755,7 @@ TRISD1                            00000001
 TRISD2                            00000002
 TRISD3                            00000003
 TRISD4                            00000004
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE 14
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE 14
 
 
 SYMBOL TABLE
@@ -814,7 +814,7 @@ _IDLOC3                           00002003
 _LP_OSC                           00003FFC
 _LVP_OFF                          00003F7F
 _LVP_ON                           00003FFF
-MPASM  5.48                       TEST2_2.ASM   2-6-2013  7:36:21         PAGE 15
+MPASM  5.48                       TEST2_2.ASM   2-20-2013  17:14:54         PAGE 15
 
 
 SYMBOL TABLE

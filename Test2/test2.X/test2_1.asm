@@ -280,7 +280,7 @@ retfie
 init
 	call init_pic
 	call reset_software
-	call reset_hardware
+	;call reset_hardware
 	call reset_realtime
 	clrf TMR0 ; start timing
 	bsf INTCON, T0IE
@@ -390,7 +390,7 @@ reset_hardware
 ; Output: rt_year, rt_month, rt_day, rt_hour, rt_min, rt_sec
 ; Affect:
 ;*******************************************************************************
-	reset_realtime
+reset_realtime
 	movlw PHASE_RTCINIT
 	movwf phase
 	clrf rt_year
@@ -1323,7 +1323,7 @@ calcruntime_next3
 calcruntime_overflow
     movlw 0xFF ; !!!!
     movwf runtime
-return
+    return
 ;*******************************************************************************
 ; "lightsensor": Light Sensor Read, A/D Convert, and Store Function
 ; Func: Read in analog signal from light sensor, convert it to

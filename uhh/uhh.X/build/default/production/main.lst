@@ -1,0 +1,2897 @@
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001     list p=16f877
+                      00002     #include <p16f877.inc>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F877 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2012 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00540         LIST
+                      00003     #include <common.inc>
+                      00001         ;extern LCD_init, LCD_clear, LCD_line2s, LCD_out, LCD_wt, delay50us, delay5ms, delayX5msm, delay
+                            100ms, delayX100msm, delay1sl
+                      00002 
+                      00003 
+                      00004         #define DEBUG
+                      00005         #define NULL 0x00 ; must not change
+                      00006         #define FALSE 0x00 ; must not change
+                      00007         #define TRUE 0xFF ; must not change
+                      00008         #define KEYPAD_DA PORTB, 1
+                      00009         #define SMOTOR_S0 PORTD, 0
+                      00010         #define SMOTOR_S1 PORTD, 1
+                      00011         #define SMOTOR_S2 PORTE, 0
+                      00012         #define SMOTOR_S3 PORTE, 1
+                      00013         #define SMOTOR_EN PORTE, 2
+                      00014         #define PMOTOR PORTC, 1
+                      00015     #define SWMOTOR PORTC, 0
+                      00016     #define VMOTOR_C0 PORTC, 2
+                      00017         #define VMOTOR_C1 PORTC, 3
+                      00018         ;#define IRLED PORTC, 2
+                      00019         ;#define FB_TOP PORTC, 5
+                      00020         ;#define FB_BOT PORTC, 6
+                      00021         #define FB_ROW4 PORTC, 7
+                      00022         #define LCD_RS PORTD, 2
+                      00023         #define LCD_E PORTD, 3
+                      00024         #define LCD_PORT PORTD
+                      00025         #define CL_POS_BIT 0
+                      00026         #define CL_FN_BIT 1
+                      00027         #define CL_ERR_BIT 2
+                      00028         #define STOP_BUT 0x0B ; stop buttom
+                      00029         #define PHASE_HDINIT 0 ; Phase 0: Hardware Initialization/Reset
+                      00030         #define PHASE_RTCINIT 1 ; Phase 1: RTC Initialization/Reset
+                      00031         #define PHASE_REALTIME 2 ; Phase 2: Real Time
+                      00032         #define PHASE_NOREPORT 3 ; Phase 3: No Report
+                      00033         #define PHASE_REPORT 4 ; Phase 4: Report Review
+                      00034         #define PHASE_RUN 5 ; Phase 5: Inspection Run
+                      00035         #define PHASE_FINISH 6 ; Phase 6: Inspection Finish
+                      00036         ; pull-up diable, Timer0 internal clk, pos edge, 1:64
+                      00037         #define INITVAL_OPTREG B'10000101'
+                      00038         #define INITVAL_TRISA B'00101111'
+                      00039         #define INITVAL_TRISB B'11110010'
+                      00040         #define INITVAL_TRISC B'11100000' ;B'11100000'!!!!
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00041         #define INITVAL_TRISD B'00000000'
+                      00042         #define INITVAL_TRISE B'00000000'
+                      00043         #define INITVAL_ADCON0 B'10000001' ; 32Tosc, AN0, ADC on
+                      00044         #define INITVAL_ADCON1 B'00000100' ; left justified, 3 channel, 0 Vref, RA0, RA1, RA3
+                      00045 ;******************CONSTANTS****************************************************
+  00000006            00046 MAXLINE EQU .6 ; (max "line_num" - 1) in report phase
+  00000014            00047 MAXPOS EQU .20 ; total positions = ROWS*COLS
+  00000004            00048 ROWS EQU .4 ; total 4 rows to move
+  00000005            00049 COLS EQU .5 ; total 5 cols in a row
+  00000002            00050 FSNUM EQU .2 ; number of force sensors
+  00000003            00051 MAXCLINROW EQU .3 ; max number of CLs possible in a row
+  0000001E            00052 DCDOWNDELAY EQU .30 ; * 0.1s == elapse time for DC motor to drive down
+  0000001C            00053 SMOTOR_STEPS EQU .28 ; * 4 == # of steps that stepper motor need to turn
+  00000006            00054 SMOTOR_SPD_F EQU .6 ; speed fact: speed = 1 step / (SMOTOR_SPD_F * 5ms)
+  00000050            00055 THD_CL3LED EQU .80 ; threshold to distinguish between 2 LEDs and 3LEDS
+  0000001C            00056 THD_IRLED EQU .28 ; threshold for infrared reflected light
+  00000005            00057 THD_BG EQU .5 ; threshold for background variation (add to light_bg)
+  0000000C            00058 MAXLOG EQU .12 ; max number of log
+  00000006            00059 MAXLOGBANK EQU .6 ; max number of log per bank = MAXLOG/2
+  00000010            00060 LOGLENGTH EQU .16 ; length of each log entry
+  00000004            00061 LIGHTAVGX EQU .4 ; number of sample light sensor reading to be averaged
+                      00062 ;******************MACROS*******************************************************
+                      00063 BANK0 macro
+                      00064         bcf STATUS, RP0
+                      00065         endm
+                      00066 BANK1 macro
+                      00067         bsf STATUS, RP0
+                      00068         endm
+                      00069 BANK00 macro
+                      00070         bcf STATUS, IRP
+                      00071         bcf STATUS, RP1
+                      00072         bcf STATUS, RP0
+                      00073         endm
+                      00074         ;BANK02 macro
+                      00075         ; bsf STATUS, IRP
+                      00076         ; bsf STATUS, RP1
+                      00077         ; bcf STATUS, RP0
+                      00078         ; endm
+                      00079         ;
+                      00080         ;BANK03 macro
+                      00081         ; bsf STATUS, IRP
+                      00082         ; bsf STATUS, RP1
+                      00083         ; bsf STATUS, RP0
+                      00084         ; endm
+                      00085         ; Affect W!
+                      00086 MOVFF macro dest, orig
+                      00087         movf orig, w
+                      00088         movwf dest
+                      00089         endm
+                      00090 ; Affect W!
+                      00091 MOVLF macro dest, literal
+                      00092         movlw literal
+                      00093         movwf dest
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00094         endm
+                      00095 
+                      00096 FCALL macro subroutine
+                      00097     local here
+                      00098     lcall subroutine
+                      00099     pagesel here
+                      00100 here:
+                      00101     endm
+2007   3F72           00004     __CONFIG _CP_OFF & _WDT_OFF & _BODEN_ON & _PWRTE_ON & _HS_OSC & _WRT_ENABLE_ON & _CPD_OFF & _LVP_OFF
+  0000                00005     extern LCD_init, LCD_clear, LCD_line2, LCD_out, LCD_wt
+  0000                00006         extern delay50us, delayX50usm, delay5ms, delayX5msm, delay100ms, delayX100msm, delay1sl
+  0000                00007     extern run_expat1, run_expat2, run_expat3, run_expat4, run_expat5, run_expat6, run_eexpat1, run_eexp
+                            at2, run_eexpat3, run_eexpat4, run_eexpat5, run_eexpat6
+                      00008 ;******************VARIABLES****************************************************
+                      00009     cblock 0x20
+  00000020            00010         arg ;used in COPY_DEC1
+  00000021            00011         arg2 ;used in COPY_DEC1
+  00000022            00012         arith_temp ;contains remainder/divident, or multiplier
+  00000023            00013         arith_temp2 ;contains quotient of divfn, or multiplier
+  00000024            00014         layout : .20
+  00000038            00015         LCDline : .17 ;?????
+  00000049            00016         line_num
+  0000004A            00017         literal_addr
+  0000004B            00018         log_total ;total number of reports
+  0000004C            00019         log_next ;index for next report
+  0000004D            00020         newsec
+  0000004E            00021         phase
+  0000004F            00022         report_num
+  00000050            00023         temp ;used in literal and copylayout
+  00000051            00024         temp2
+  00000052            00025         temp3
+  00000053            00026         temp4
+  00000054            00027         rt_year ; realtime
+  00000055            00028                 rt_month
+  00000056            00029                 rt_day
+  00000057            00030                 rt_hour
+  00000058            00031                 rt_min
+  00000059            00032                 rt_sec
+  0000005A            00033                 st_year ; start
+  0000005B            00034                 st_month
+  0000005C            00035                 st_day
+  0000005D            00036                 st_hour
+  0000005E            00037                 st_min
+  0000005F            00038                 st_sec
+  00000060            00039                 end_hour
+  00000061            00040                 end_min
+  00000062            00041                 end_sec
+  00000063            00042                 runtime
+  00000064            00043         pat1
+  00000065            00044         pat2
+  00000066            00045         redr
+  00000067            00046         camelr
+  00000068            00047         fs_1
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+  00000069            00048         fs_2
+                      00049     endc
+                      00050     cblock 0xB0
+                      00051 
+                      00052     endc
+                      00053 
+                      00054     udata_shr
+0000                  00055 w_temp res 1
+0001                  00056 status_temp res 1
+0002                  00057 FSR_temp res 1
+0003                  00058 rt_counter res 1
+0004                  00059 table_temp res 1
+                      00060 ;**********************MACROS**********************************
+                      00061 DIVLW macro L
+                      00062     movwf arith_temp ;store the divident
+                      00063     movlw L ;move divisor into w
+                      00064     call divfn
+Warning[205]: Found directive in column 1. (endm)
+                      00065 endm
+                      00066 
+                      00067 MODLW macro L
+                      00068     movwf arith_temp
+                      00069     movlw L
+                      00070     call divfn
+                      00071     movf arith_temp, w
+Warning[205]: Found directive in column 1. (endm)
+                      00072 endm
+                      00073 
+                      00074 MULLW macro L
+                      00075     movwf arith_temp
+                      00076     movlw L
+                      00077     call mulfn
+Warning[205]: Found directive in column 1. (endm)
+                      00078 endm
+                      00079 
+                      00080 COPY_STRING macro string_table
+                      00081     movlw string_table
+                      00082     call copystring
+Warning[205]: Found directive in column 1. (endm)
+                      00083 endm
+                      00084 
+                      00085 COPY_DEC1 macro decnumber
+                      00086     movf decnumber, w
+                      00087     movwf arg
+                      00088     movlw 0x01
+                      00089     movwf arg2
+                      00090     call copydec
+Warning[205]: Found directive in column 1. (endm)
+                      00091 endm
+                      00092 
+                      00093 COPY_DEC2 macro decnumber
+                      00094         movf decnumber, w
+                      00095         movwf arg
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00096         movlw 0x02
+                      00097         movwf arg2
+                      00098         call copydec
+Warning[205]: Found directive in column 1. (endm)
+                      00099 endm
+                      00100 
+                      00101 COPY_DEC3 macro decnumber
+                      00102         movf decnumber, w
+                      00103         movwf arg
+                      00104         movlw 0x03
+                      00105         movwf arg2
+                      00106         call copydec
+Warning[205]: Found directive in column 1. (endm)
+                      00107 endm
+                      00108 
+                      00109 TABLE macro
+                      00110         local tablename
+                      00111         movwf table_temp
+                      00112         movlw HIGH tablename
+                      00113         movwf PCLATH
+                      00114         movf table_temp, w
+                      00115         addlw LOW tablename
+                      00116         btfsc STATUS, C
+                      00117         incf PCLATH, f
+                      00118         movwf PCL
+                      00119         tablename
+Warning[205]: Found directive in column 1. (endm)
+                      00120 endm
+                      00121 
+                      00122 STORE_FORCE macro addr
+                      00123     movlw addr
+                      00124     call forcesensor
+Warning[205]: Found directive in column 1. (endm)
+                      00125 endm
+                      00126 
+                      00127 DELAY_2500MS macro
+                      00128     movlw .5
+                      00129     call delayX100msm
+                      00130     call delay1sl
+                      00131     call delay1sl
+Warning[205]: Found directive in column 1. (endm)
+                      00132 endm
+                      00133 
+                      00134 DELAY_1800MS macro
+                      00135     movlw .8
+                      00136     call delayX100msm
+                      00137     call delay1sl
+Warning[205]: Found directive in column 1. (endm)
+                      00138 endm
+                      00139 ;****************************
+                      00140     org 0x0000
+0000   2???           00141     goto main
+                      00142 
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00143     org 0x0004
+0004   2???           00144     goto interrupt
+                      00145 
+                      00146     org 0x0005
+0005                  00147 literal
+0005   00D0           00148     movwf temp ;w originally contains literal_addr
+0006   018A           00149     clrf PCLATH
+0007   0850           00150     movf temp, w
+0008   0082           00151     movwf PCL
+0009   3449 344E 3449 00152 str_init dt "INITIALIZING...", 0
+       3454 3449 3441 
+       344C 3449 345A 
+       3449 344E 3447 
+       342E 342E 342E 
+       3400 
+0019   344E 344F 3420 00153 str_noreport dt "NO REPORT", 0
+       3452 3445 3450 
+       344F 3452 3454 
+       3400 
+0023   3445 344E 3454 00154 str_enterymd dt "ENTER 20YYMMDD", 0
+       3445 3452 3420 
+       3432 3430 3459 
+       3459 344D 344D 
+       3444 3444 3400 
+0032   3445 344E 3454 00155 str_enterhms dt "ENTER hhmmss", 0
+       3445 3452 3420 
+       3468 3468 346D 
+       346D 3473 3473 
+       3400 
+003F   3432 3430 3400 00156 str_yearhead dt "20", 0
+0042   342D 3400      00157 str_dash dt "-", 0
+0044   343A 3400      00158 str_colon dt ":", 0
+0046   344C 344F 3447 00159 str_entry dt "LOG ENTRY: ",0
+       3420 3445 344E 
+       3454 3452 3459 
+       343A 3420 3400 
+0052   3453 3454 3441 00160 str_start dt "START: ", 0
+       3452 3454 343A 
+       3420 3400 
+005A   3446 3449 344E 00161 str_finish dt "FINISH: ", 0
+       3449 3453 3448 
+       343A 3420 3400 
+0063   3452 3455 344E 00162 str_runtime dt "RUNTIME: ", 0
+       3454 3449 344D 
+       3445 343A 3420 
+       3400 
+006D   3473 3400      00163 str_s dt "s", 0 ; i.e. second
+006F   3452 3445 3444 00164 str_redr dt "RED: ", 0
+       343A 3420 3400 
+0075   3443 3441 344D 00165 str_camelr dt "CAMEL: ", 0
+       3445 344C 343A 
+       3420 3400 
+007D   3452 3455 344E 00166 str_running dt "RUNNING", 0
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+       344E 3449 344E 
+       3447 3400 
+0085   342E 3400      00167 str_dot dt ".", 0
+0087   3449 344E 3453 00168 str_insp_fin dt "INSPECTION FIN", 0
+       3450 3445 3443 
+       3454 3449 344F 
+       344E 3420 3446 
+       3449 344E 3400 
+0096   3450 3441 3454 00169 str_pat1 dt "PAT 1: ", 0
+       3420 3431 343A 
+       3420 3400 
+009E   3450 3441 3454 00170 str_pat2 dt "PAT 2: ", 0
+       3420 3432 343A 
+       3420 3400 
+00A6   3445 344D 3445 00171 str_emerstop dt "EMERGENCY STOP", 0
+       3452 3447 3445 
+       344E 3443 3459 
+       3420 3453 3454 
+       344F 3450 3400 
+00B5   3400           00172 str_null dt 0
+                      00173 ; corresponds to the layout byte
+                      00174 ; corresponds to keypad
+00B6   3431 3432 3433 00175 char_keynumber dt "123", 0, "456", 0, "789", 0, 0, "0", 0, 0
+       3400 3434 3435 
+       3436 3400 3437 
+       3438 3439 3400 
+       3400 3430 3400 
+       3400 
+00C6   342F 3400      00176 char_slash dt "/", 0
+                      00177 
+00C8                  00178 main
+00C8   2???           00179     call init
+00C9                  00180 keypoll
+00C9   1886           00181         btfsc KEYPAD_DA ;Keypad data available pin PORTB, 1
+00CA   2???           00182         call keyresp
+00CB   2???           00183     call keypad_timeout
+00CC   2???           00184         goto keypoll
+                      00185 
+00CD                  00186 interrupt
+00CD   00??           00187         movwf w_temp ; save W
+00CE   0E03           00188         swapf STATUS, w ; save STATUS, note swapf will not affect STATUS
+                      00189         BANK00
+00CF   1383               M         bcf STATUS, IRP
+00D0   1303               M         bcf STATUS, RP1
+00D1   1283               M         bcf STATUS, RP0
+00D2   00??           00190         movwf status_temp
+                      00191         ; movf PCLATH, w ; save page information
+                      00192         ; movwf pclath_temp
+                      00193         ; clrf PCLATH
+00D3   0804           00194         movf FSR, w ; save FSR
+00D4   00??           00195         movwf FSR_temp
+                      00196 
+                      00197         ; Timer0 Interrupt Handle
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00198         ; T0IE always on, no test
+00D5   1D0B           00199         btfss INTCON, T0IF
+00D6   2???           00200         goto int_tmr0_skip
+00D7   0A??           00201         incf rt_counter, f
+00D8   08??           00202         movf rt_counter, w ; test with 98h, correponds to 996,147.2us
+00D9   3C98           00203         sublw 0x98
+00DA   1D03           00204         btfss STATUS, Z
+00DB   2???           00205         goto int_tmr0_end ; rt_counter <> 98h
+00DC   01??           00206         clrf rt_counter ; rt_counter == 98h
+00DD   3059           00207         movlw rt_sec
+00DE   2???           00208         call addsec
+00DF   3056           00209         movlw rt_day
+00E0   1803           00210         btfsc STATUS, C
+00E1   2???           00211         call addday ; addday if carry from addsec
+                      00212         MOVLF newsec, TRUE
+00E2   30FF               M         movlw 0xFF
+00E3   00CD               M         movwf newsec
+00E4                  00213 int_tmr0_end
+00E4   110B           00214         bcf INTCON, T0IF
+00E5                  00215 int_tmr0_skip
+                      00216         ; Keypad (PORTB) Change Interrupt
+00E5   1D8B           00217         btfss INTCON, RBIE ; interrept must be enabled first
+00E6   2???           00218         goto int_rb_skip
+00E7   1C0B           00219         btfss INTCON, RBIF
+00E8   2???           00220         goto int_rb_skip
+00E9   0E06           00221         swapf PORTB, w ; test PORTB<7:4> against stop button
+00EA   390F           00222         andlw 0x0F
+00EB   3C0B           00223         sublw STOP_BUT
+00EC   1D03           00224         btfss STATUS, Z
+00ED   2???           00225         goto int_rb_end
+                      00226         ; Emergency Stop!!!!
+                      00227         ;bcf IRLED ; turn off IRLEDs
+                      00228         MOVLF FSR, LCDline ; display emergency stop
+00EE   3038               M         movlw LCDline
+00EF   0084               M         movwf FSR
+                      00229         COPY_STRING str_emerstop
+00F0   30??               M     movlw str_emerstop
+00F1   2???               M     call copystring
+00F2   2???           00230         call LCD_clear ; clear LCD display
+00F3   2???           00231         call writeline
+00F4   2???           00232         call LCD_out
+00F5   1007           00233     bcf PORTC, 0
+00F6   1107           00234     bcf PORTC, 2
+00F7   1087           00235     bcf PORTC, 1
+00F8   1187           00236     bcf PORTC, 3
+Warning[207]: Found label after column 1. (stop)
+00F9   2???           00237         stop goto stop ; hang the program
+00FA                  00238 int_rb_end
+00FA   100B           00239         bcf INTCON, RBIF
+00FB                  00240 int_rb_skip
+00FB   08??           00241         movf FSR_temp, w ; restore FSR
+00FC   0084           00242         movwf FSR
+                      00243         ; movf pclath_temp, w ; restore page information
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00244         ; movwf PCLATH
+00FD   0E??           00245         swapf status_temp, w ; restore STATUS
+00FE   0083           00246         movwf STATUS
+00FF   0E??           00247         swapf w_temp, f ; restore W, not affecting STATUS
+0100   0E??           00248         swapf w_temp, w
+0101   0009           00249     retfie
+                      00250 
+0102                  00251 init
+0102   2???           00252     call init_pic
+0103   2???           00253     call reset_software
+0104   2???           00254     call reset_hardware
+0105   2???           00255     call reset_realtime
+0106   0181           00256     clrf TMR0 ; start timing
+0107   168B           00257         bsf INTCON, T0IE
+0108   178B           00258         bsf INTCON, GIE
+0109   3002           00259         movlw PHASE_REALTIME
+010A   00CE           00260         movwf phase
+010B   2???           00261         call display
+010C   0008           00262     return
+                      00263 
+010D                  00264 init_pic
+010D   018B           00265     clrf INTCON ;Disable interrupt
+                      00266     BANK0
+010E   1283               M         bcf STATUS, RP0
+010F   0181           00267     clrf TMR0
+0110   01??           00268     clrf rt_counter
+                      00269     BANK1
+0111   1683               M         bsf STATUS, RP0
+0112   3085           00270     movlw INITVAL_OPTREG
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0113   0081           00271     movwf OPTION_REG
+0114   302F           00272     movlw INITVAL_TRISA
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0115   0085           00273         movwf TRISA
+0116   30F2           00274         movlw INITVAL_TRISB
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0117   0086           00275         movwf TRISB
+0118   30E0           00276         movlw INITVAL_TRISC
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0119   0087           00277         movwf TRISC
+011A   3000           00278         movlw INITVAL_TRISD
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+011B   0088           00279         movwf TRISD
+011C   3000           00280         movlw INITVAL_TRISE
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+011D   0089           00281         movwf TRISE
+011E   3004           00282     movlw INITVAL_ADCON1
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+011F   009F           00283         movwf ADCON1
+                      00284         BANK0
+0120   1283               M         bcf STATUS, RP0
+0121   3081           00285         movlw INITVAL_ADCON0
+0122   009F           00286         movwf ADCON0
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0123   0008           00287         return
+                      00288 
+                      00289 ;*********reset_software*****
+0124                  00290 reset_software
+0124   3000           00291     movlw PHASE_HDINIT
+0125   00CE           00292         movwf phase
+0126   01CF           00293         clrf report_num
+0127   01C9           00294         clrf line_num
+0128   01CB           00295         clrf log_total
+0129   01CC           00296         clrf log_next
+012A   0008           00297         return
+                      00298 ;****************************
+                      00299 ;********reset_hardware******
+012B                  00300 reset_hardware
+                      00301         ; PORT Reset/Initialization
+                      00302         ; BANK0
+012B   0185           00303         clrf PORTA ; RA4 (Reserved) output 0
+012C   0186           00304         clrf PORTB ; RB0, 2, 3 (Reserved) output 0
+012D   0187           00305         clrf PORTC ; VMOTOR disable, LED off
+012E   0188           00306         clrf PORTD ; clear S0, S1 of SMOTOR
+012F   0189           00307         clrf PORTE ; SMOTOR disable, clear S2, S3 of SMOTOR
+                      00308         ; LCD Reset/Initialization
+0130   2???           00309     call LCD_init
+0131   2???           00310         call display
+0132   0008           00311     return
+                      00312 ;****************************
+                      00313 ;******reset_realtime********
+0133                  00314 reset_realtime
+0133   3001           00315         movlw PHASE_RTCINIT
+0134   00CE           00316         movwf phase
+0135   01D4           00317         clrf rt_year
+0136   01D5           00318         clrf rt_month
+0137   01D6           00319         clrf rt_day
+0138   01D7           00320         clrf rt_hour
+0139   01D8           00321         clrf rt_min
+013A   01D9           00322         clrf rt_sec
+                      00323         ; YYMMDD
+013B   2???           00324         call LCD_clear ; clear LCD display
+                      00325         MOVLF FSR, LCDline
+013C   3038               M         movlw LCDline
+013D   0084               M         movwf FSR
+                      00326         COPY_STRING str_enterymd
+013E   30??               M     movlw str_enterymd
+013F   2???               M     call copystring
+0140   2???           00327         call writeline
+0141   2???           00328         call LCD_line2
+                      00329         MOVLF FSR, LCDline
+0142   3038               M         movlw LCDline
+0143   0084               M         movwf FSR
+                      00330         COPY_STRING str_yearhead
+0144   30??               M     movlw str_yearhead
+0145   2???               M     call copystring
+0146   2???           00331         call writeline
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0147   01D2           00332         clrf temp3 ; number of valid numbers entered
+0148                  00333 reset_rt_ymd
+0148   1C86           00334         btfss KEYPAD_DA ; Wait until data is available from the keypad
+0149   2???           00335         goto reset_rt_ymd
+014A   0E06           00336         swapf PORTB, W ; Read PortB<7:4> into W<3:0>
+014B   390F           00337         andlw 0x0F
+014C   3E??           00338         addlw char_keynumber
+014D   2???           00339         call literal ; Convert keypad value to LCD character (value is still held in W)
+014E   3E00           00340         addlw 0x00
+014F   1903           00341         btfsc STATUS, Z ; test for valid input (number)
+0150   2???           00342         goto reset_rt_ymdrl
+0151   00D1           00343         movwf temp2 ; hold the value
+0152   2???           00344         call LCD_wt ; Write the value in W to LCD
+0153   3030           00345         movlw 0x30
+0154   02D1           00346         subwf temp2, f ; convert ASCII to number
+0155   0852           00347         movf temp3, w
+                      00348         TABLE ; switch (temp)
+  0000                    M         local tablename
+0156   00??               M         movwf table_temp
+0157   30??               M         movlw HIGH tablename
+0158   008A               M         movwf PCLATH
+0159   08??               M         movf table_temp, w
+015A   3E??               M         addlw LOW tablename
+015B   1803               M         btfsc STATUS, C
+015C   0A8A               M         incf PCLATH, f
+015D   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+015E                      M         tablename
+015E   2???           00349         goto reset_rt_ymd0
+015F   2???           00350         goto reset_rt_ymd1
+0160   2???           00351         goto reset_rt_ymd2
+0161   2???           00352         goto reset_rt_ymd3
+0162   2???           00353         goto reset_rt_ymd4
+0163   2???           00354         goto reset_rt_ymd5
+0164                  00355 reset_rt_ymd0
+0164   0851           00356         movf temp2, w
+                      00357         MULLW .10
+0165   00A2               M     movwf arith_temp
+0166   300A               M     movlw .10
+0167   2???               M     call mulfn
+0168   07D4           00358         addwf rt_year, f
+0169   0AD2           00359         incf temp3, f
+016A   2???           00360         goto reset_rt_ymdrl
+016B                  00361 reset_rt_ymd1
+016B   0851           00362         movf temp2, w
+016C   07D4           00363         addwf rt_year, f
+016D   0AD2           00364         incf temp3, f
+016E   2???           00365         goto reset_rt_ymdrl
+016F                  00366 reset_rt_ymd2
+016F   0851           00367         movf temp2, w
+                      00368         MULLW .10
+0170   00A2               M     movwf arith_temp
+0171   300A               M     movlw .10
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0172   2???               M     call mulfn
+0173   07D5           00369         addwf rt_month, f
+0174   0AD2           00370         incf temp3, f
+0175   2???           00371         goto reset_rt_ymdrl
+0176                  00372 reset_rt_ymd3
+0176   0851           00373         movf temp2, w
+0177   07D5           00374         addwf rt_month, f
+0178   0AD2           00375         incf temp3, f
+0179   2???           00376         goto reset_rt_ymdrl
+017A                  00377 reset_rt_ymd4
+017A   0851           00378         movf temp2, w
+                      00379         MULLW .10
+017B   00A2               M     movwf arith_temp
+017C   300A               M     movlw .10
+017D   2???               M     call mulfn
+017E   07D6           00380         addwf rt_day, f
+017F   0AD2           00381         incf temp3, f
+0180   2???           00382         goto reset_rt_ymdrl
+0181                  00383 reset_rt_ymd5
+0181   0851           00384         movf temp2, w
+0182   07D6           00385         addwf rt_day, f
+0183   0AD2           00386         incf temp3, f
+0184                  00387 reset_rt_ymdrl
+0184   1886           00388         btfsc KEYPAD_DA ; Wait until key is released
+0185   2???           00389         goto reset_rt_ymdrl
+0186   3006           00390         movlw 0x06 ; 6 chars entered
+0187   0252           00391         subwf temp3, w
+0188   1C03           00392         btfss STATUS, C
+0189   2???           00393         goto reset_rt_ymd
+                      00394         ; hhmmss
+018A   2???           00395         call LCD_clear ; clear LCD display
+                      00396         MOVLF FSR, LCDline
+018B   3038               M         movlw LCDline
+018C   0084               M         movwf FSR
+                      00397         COPY_STRING str_enterhms
+018D   30??               M     movlw str_enterhms
+018E   2???               M     call copystring
+018F   2???           00398         call writeline
+0190   2???           00399         call LCD_line2
+0191   01D2           00400         clrf temp3 ; number of valid numbers entered
+0192                  00401 reset_rt_hms
+0192   1C86           00402         btfss KEYPAD_DA ; Wait until data is available from the keypad
+0193   2???           00403         goto reset_rt_hms
+0194   0E06           00404         swapf PORTB, W ; Read PortB<7:4> into W<3:0>
+0195   390F           00405         andlw 0x0F
+0196   3E??           00406         addlw char_keynumber
+0197   2???           00407         call literal ; Convert keypad value to LCD character (value is still held in W)
+0198   3E00           00408         addlw 0x00
+0199   1903           00409         btfsc STATUS, Z ; test for valid input (number)
+019A   2???           00410         goto reset_rt_hmsrl
+019B   00D1           00411         movwf temp2 ; hold the value
+019C   2???           00412         call LCD_wt ; Write the value in W to LCD
+019D   3030           00413         movlw 0x30
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+019E   02D1           00414         subwf temp2, f ; convert ASCII to number
+019F   0852           00415         movf temp3, w
+                      00416         TABLE ; switch (temp)
+  0000                    M         local tablename
+01A0   00??               M         movwf table_temp
+01A1   30??               M         movlw HIGH tablename
+01A2   008A               M         movwf PCLATH
+01A3   08??               M         movf table_temp, w
+01A4   3E??               M         addlw LOW tablename
+01A5   1803               M         btfsc STATUS, C
+01A6   0A8A               M         incf PCLATH, f
+01A7   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+01A8                      M         tablename
+01A8   2???           00417         goto reset_rt_hms0
+01A9   2???           00418         goto reset_rt_hms1
+01AA   2???           00419         goto reset_rt_hms2
+01AB   2???           00420         goto reset_rt_hms3
+01AC   2???           00421         goto reset_rt_hms4
+01AD   2???           00422         goto reset_rt_hms5
+01AE                  00423 reset_rt_hms0
+01AE   0851           00424         movf temp2, w
+                      00425         MULLW .10
+01AF   00A2               M     movwf arith_temp
+01B0   300A               M     movlw .10
+01B1   2???               M     call mulfn
+01B2   07D7           00426         addwf rt_hour, f
+01B3   0AD2           00427         incf temp3, f
+01B4   2???           00428         goto reset_rt_hmsrl
+01B5                  00429 reset_rt_hms1
+01B5   0851           00430         movf temp2, w
+01B6   07D7           00431         addwf rt_hour, f
+01B7   0AD2           00432         incf temp3, f
+01B8   2???           00433         goto reset_rt_hmsrl
+01B9                  00434 reset_rt_hms2
+01B9   0851           00435         movf temp2, w
+                      00436         MULLW .10
+01BA   00A2               M     movwf arith_temp
+01BB   300A               M     movlw .10
+01BC   2???               M     call mulfn
+01BD   07D8           00437         addwf rt_min, f
+01BE   0AD2           00438         incf temp3, f
+01BF   2???           00439         goto reset_rt_hmsrl
+01C0                  00440 reset_rt_hms3
+01C0   0851           00441         movf temp2, w
+01C1   07D8           00442         addwf rt_min, f
+01C2   0AD2           00443         incf temp3, f
+01C3   2???           00444         goto reset_rt_hmsrl
+01C4                  00445 reset_rt_hms4
+01C4   0851           00446         movf temp2, w
+                      00447         MULLW .10
+01C5   00A2               M     movwf arith_temp
+01C6   300A               M     movlw .10
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+01C7   2???               M     call mulfn
+01C8   07D9           00448         addwf rt_sec, f
+01C9   0AD2           00449         incf temp3, f
+01CA   2???           00450         goto reset_rt_hmsrl
+Warning[207]: Found label after column 1. (reset_rt_hms5)
+01CB                  00451         reset_rt_hms5
+01CB   0851           00452         movf temp2, w
+01CC   07D9           00453         addwf rt_sec, f
+01CD   0AD2           00454         incf temp3, f
+01CE                  00455 reset_rt_hmsrl
+01CE   1886           00456         btfsc KEYPAD_DA ; Wait until key is released
+01CF   2???           00457         goto reset_rt_hmsrl
+01D0   3006           00458         movlw 0x06 ; 6 chars entered
+01D1   0252           00459         subwf temp3, w
+01D2   1C03           00460         btfss STATUS, C
+01D3   2???           00461         goto reset_rt_hms
+01D4   0008           00462         return
+                      00463 ;****************************
+                      00464 ;*********addsec*************
+01D5                  00465 addsec
+01D5   0084           00466         movwf FSR
+01D6   0A80           00467         incf INDF, f ; +1sec
+01D7   303C           00468         movlw .60
+01D8   0200           00469         subwf INDF, w ; W = INDF - 60, test if 60s
+01D9   1C03           00470         btfss STATUS, C
+01DA   0008           00471         return ; INDF < 60, C==0, function done
+01DB   0180           00472         clrf INDF ; >=60s, clear sec
+01DC   0384           00473         decf FSR, f ; now FSR has address of min byte
+01DD   0A80           00474         incf INDF, f ; +1min
+01DE   303C           00475         movlw .60
+01DF   0200           00476         subwf INDF, w ; W = INDF - 60, test if 60min
+01E0   1C03           00477         btfss STATUS, C
+01E1   0008           00478         return ; INDF < 60, C==0, function done
+01E2   0180           00479         clrf INDF ; >=60min, clear min
+01E3   0384           00480         decf FSR, f ; now FSR has address of hour byte
+01E4   0A80           00481         incf INDF, f ; +1hour
+01E5   3018           00482         movlw .24
+01E6   0200           00483         subwf INDF, w ; W = INDF - 24, test if 24hour
+01E7   1C03           00484         btfss STATUS, C
+01E8   0008           00485         return ; INDF < 24, C==0, function done
+01E9   0180           00486         clrf INDF ; >=24h, clear hour
+01EA   0008           00487         return ; C has been set
+                      00488 ;****************************
+                      00489 ;*********addday*************
+01EB                  00490 addday
+01EB   0084           00491         movwf FSR
+01EC   0A80           00492         incf INDF, f ; +1day
+01ED   301F           00493         movlw .31 ; assume 1 month always= 30 days !!!!
+01EE   0200           00494         subwf INDF, w ; W = INDF - 31, test if over 30days
+01EF   1C03           00495         btfss STATUS, C
+01F0   0008           00496         return ; INDF < 31, C==0, function done
+01F1   0180           00497         clrf INDF ; >=31s, clear day
+Message[305]: Using default destination of 1 (file).
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+01F2   0A80           00498         incf INDF ; day default at 1
+01F3   0384           00499         decf FSR, f ; now FSR has address of month byte
+01F4   0A80           00500         incf INDF, f ; +1month
+01F5   300D           00501         movlw .13
+01F6   0200           00502         subwf INDF, w ; W = INDF - 13, test if over 12month
+01F7   1C03           00503         btfss STATUS, C
+01F8   0008           00504         return ; INDF < 13, C==0, function done
+01F9   0180           00505         clrf INDF ; >=13month, clear month
+Message[305]: Using default destination of 1 (file).
+01FA   0A80           00506         incf INDF ; month default at 1
+01FB   0384           00507         decf FSR, f ; now FSR has address of year byte
+01FC   0A80           00508         incf INDF, f ; +1year
+01FD   0008           00509         return
+                      00510 ;****************************
+                      00511 ;*******calcruntime**********
+01FE                  00512 calcruntime
+01FE   085E           00513     movf st_min, w ; temp = end_min - st_min
+01FF   0261           00514     subwf end_min, w
+0200   1803           00515     btfsc STATUS, C
+0201   2???           00516     goto calcruntime_next1
+0202   3E3C           00517     addlw .60 ; borrow occur, +60min
+0203                  00518 calcruntime_next1
+0203   00D0           00519     movwf temp
+0204   085F           00520     movf st_sec, w ; W = end_sec - st_sec
+0205   0262           00521     subwf end_sec, w
+0206   1803           00522     btfsc STATUS, C
+0207   2???           00523     goto calcruntime_next2
+0208   3E3C           00524     addlw .60 ; borrow occur, +60sec
+0209   03D0           00525     decf temp, f ; -1min
+020A                  00526 calcruntime_next2
+020A   08D0           00527     movf temp, f
+020B   1903           00528     btfsc STATUS, Z
+020C   2???           00529     goto calcruntime_next3 ; temp == 0, runtime = W
+020D                  00530 calcruntime_loop ; runtime = W + .60*temp
+020D   3E3C           00531     addlw .60
+020E   1803           00532     btfsc STATUS, C
+020F   2???           00533     goto calcruntime_overflow ; W>255 overflow
+0210   0BD0           00534     decfsz temp, f
+0211   2???           00535     goto calcruntime_loop
+0212                  00536 calcruntime_next3
+0212   00E3           00537     movwf runtime
+0213   0008           00538     return
+0214                  00539 calcruntime_overflow
+0214   30FF           00540     movlw 0xFF ; !!!!
+0215   00E3           00541     movwf runtime
+0216   0008           00542     return
+                      00543 ;****************************
+                      00544 ;*********copydec************
+0217                  00545 copydec
+0217   0820           00546         movf arg, w
+                      00547         DIVLW 0x64 ; 100
+0218   00A2               M     movwf arith_temp ;store the divident
+0219   3064               M     movlw 0x64 ;move divisor into w
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+021A   2???               M     call divfn
+021B   1D03           00548         btfss STATUS, Z ; test if quotient is 0
+021C   2???           00549         goto copydec_copyhundreds ; quotient <> 0, normal display
+021D   3003           00550         movlw 0x03 ; quotient == 0, depends on arg2
+021E   0221           00551         subwf arg2, w
+021F   1C03           00552         btfss STATUS, C ; test if arg2 < 3
+0220   2???           00553         goto copydec_tens ; arg2 < 3, skip 0 hundred
+0221   3000           00554         movlw 0x00 ; arg2 >= 3, display 0
+0222                  00555 copydec_copyhundreds
+0222   3E30           00556         addlw 0x30 ; num+0x30 = its ASCII
+0223   0080           00557         movwf INDF
+0224   0A84           00558         incf FSR, f
+0225   3003           00559         movlw 0x03 ; hundreds already displayed, set arg2 to 3
+0226   00A1           00560         movwf arg2 ; because all following digit shall be seen
+0227                  00561 copydec_tens
+0227   0820           00562         movf arg, w
+                      00563         MODLW 0x64 ; 100
+0228   00A2               M     movwf arith_temp
+0229   3064               M     movlw 0x64
+022A   2???               M     call divfn
+022B   0822               M     movf arith_temp, w
+                      00564         DIVLW 0x0A ; 10
+022C   00A2               M     movwf arith_temp ;store the divident
+022D   300A               M     movlw 0x0A ;move divisor into w
+022E   2???               M     call divfn
+022F   1D03           00565         btfss STATUS, Z ; test if quotient is 0
+0230   2???           00566         goto copydec_copytens ; quotient <> 0, normal display
+0231   3002           00567         movlw 0x02 ; quotient == 0, depends on arg2
+0232   0221           00568         subwf arg2, w
+0233   1C03           00569         btfss STATUS, C ; test if arg2 < 2
+0234   2???           00570         goto copydec_ones ; arg2 < 2, skip 0 tens
+0235   3000           00571         movlw 0x00 ; arg2 >= 2, display 0
+0236                  00572 copydec_copytens
+0236   3E30           00573         addlw 0x30 ; num+0x30 = its ASCII
+0237   0080           00574         movwf INDF
+0238   0A84           00575         incf FSR, f
+                      00576         ; movlw 0x02 ; tens already displayed, set arg2 to 2
+                      00577         ; movwf arg2 ; because all following digit shall be seen
+0239                  00578 copydec_ones
+0239   0820           00579         movf arg, w
+                      00580         MODLW 0x0A ; 10
+023A   00A2               M     movwf arith_temp
+023B   300A               M     movlw 0x0A
+023C   2???               M     call divfn
+023D   0822               M     movf arith_temp, w
+                      00581         ; ones shall be displayed anyways
+023E   3E30           00582         addlw 0x30 ; num+0x30 = its ASCII
+023F   0080           00583         movwf INDF
+0240   0A84           00584         incf FSR, f
+0241                  00585 copydec_ending ; write a null ending
+0241   3000           00586         movlw NULL
+0242   0080           00587         movwf INDF
+0243   0008           00588         return
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00589 ;****************************
+                      00590 ;*************copystring**************
+0244                  00591 copystring
+0244   00CA           00592     movwf literal_addr ;copy w (containing the string address) into literal_addr
+0245                  00593 copystring_loop
+0245   084A           00594     movf literal_addr, w
+0246   2???           00595     call literal
+0247   0080           00596     movwf INDF
+0248   0880           00597     movf INDF, f ;test INDF(last char) == 0 (end of string)
+0249   1903           00598     btfsc STATUS, Z
+024A   0008           00599     return ;return if end of string is reached
+024B   0A84           00600     incf FSR, f
+024C   0ACA           00601     incf literal_addr, f
+024D   2???           00602     goto copystring_loop
+                      00603 ;****************************
+                      00604 ;*********display************
+024E                  00605 display
+                      00606 ; run phase does not use general display function
+024E   084E           00607         movf phase, w
+024F   3C05           00608         sublw PHASE_RUN
+0250   1903           00609         btfsc STATUS, Z
+0251   0008           00610         return
+0252   0849           00611         movf line_num, w ; current line#
+0253   2???           00612         call makeline
+0254   2???           00613         call LCD_clear ; clear LCD display
+0255   2???           00614         call writeline
+0256   0A49           00615         incf line_num, w ; next line# in W, but not inc line#
+0257   2???           00616         call makeline
+0258   2???           00617         call LCD_line2
+0259   2???           00618         call writeline
+025A   2???           00619         call LCD_out ; move the cursor out of screen
+025B   0008           00620         return
+                      00621 ;****************************
+                      00622 ;*********divfn**************
+025C                  00623 divfn
+025C   3E00           00624     addlw 0x00 ;w contains the divisor
+025D   1403           00625     bsf STATUS, C ;set carry bit in STATUS in case of error
+025E   1903           00626     btfsc STATUS, Z ;if zero
+025F   0008           00627     return ;return with error
+0260   01A3           00628     clrf arith_temp2 ;else, arith_temp2 contains the result
+0261                  00629 divfn_loop
+0261   02A2           00630     subwf arith_temp, f ;arith_temp - w
+0262   1C03           00631     btfss STATUS, C ;check carry
+0263   2???           00632     goto divfn_next ;if carry is zero, goto next
+0264   0AA3           00633     incf arith_temp2, f ;if carry is not zero, increment quotient, which is in arith_temp2
+0265   2???           00634     goto divfn_loop
+0266                  00635 divfn_next
+0266   07A2           00636     addwf arith_temp, f ;undo the last one
+0267   0823           00637     movf arith_temp2, w ;w now contains the quotient
+0268   0008           00638     return
+                      00639 ;****************************
+                      00640 ;********forcesensor*********
+0269                  00641 forcesensor
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0269   01E6           00642     clrf redr
+026A   305F           00643     movlw st_sec
+                      00644     MODLW .5
+026B   00A2               M     movwf arith_temp
+026C   3005               M     movlw .5
+026D   2???               M     call divfn
+026E   0822               M     movf arith_temp, w
+026F   00E6           00645     movwf redr
+                      00646     ;movlw st_min
+                      00647     ;MODLW .3
+                      00648     ;MULLW redr
+                      00649     ;movwf redr
+                      00650 
+0270   01E7           00651     clrf camelr
+0271   3062           00652     movlw end_sec
+                      00653     MODLW .5
+0272   00A2               M     movwf arith_temp
+0273   3005               M     movlw .5
+0274   2???               M     call divfn
+0275   0822               M     movf arith_temp, w
+0276   00E7           00654     movwf camelr
+                      00655     ;movlw end_min
+                      00656     ;MODLW .3
+                      00657     ;MULLW camelr
+                      00658     ;movwf camelr
+0277   0008           00659     return
+                      00660 ;****************************
+                      00661 ;*********keyresp************
+0278                  00662 keyresp
+0278   0E06           00663         swapf PORTB, w
+0279   390F           00664         andlw 0x0F
+                      00665         TABLE
+  0000                    M         local tablename
+027A   00??               M         movwf table_temp
+027B   30??               M         movlw HIGH tablename
+027C   008A               M         movwf PCLATH
+027D   08??               M         movf table_temp, w
+027E   3E??               M         addlw LOW tablename
+027F   1803               M         btfsc STATUS, C
+0280   0A8A               M         incf PCLATH, f
+0281   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+0282                      M         tablename
+                      00666     ;keyresp_switch_table
+0282   2???           00667         goto unused_key ; keypressed = 0 "1" = "real time"
+0283   2???           00668         goto unused_key ; keypressed = 1 "2" = "report"
+0284   2???           00669         goto unused_key ; keypressed = 2 "3"
+0285   2???           00670         goto realtime ; keypressed = 3 "A"
+0286   2???           00671         goto unused_key ; keypressed = 4 "4"
+0287   2???           00672         goto unused_key ; keypressed = 5 "5"
+0288   2???           00673         goto unused_key ; keypressed = 6 "6"
+0289   2???           00674         goto report ; keypressed = 7 "B"
+028A   2???           00675         goto scroll_up ; keypressed = 8 "7" = "scroll up"
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+028B   2???           00676         goto report_last ; keypressed = 9 "8" = "report last"
+028C   2???           00677         goto unused_key ; keypressed = A "9"
+028D   2???           00678         goto stoprun ; keypressed = B "C" = "stop"
+028E   2???           00679         goto scroll_down ; keypressed = C "*" = "scroll down"
+028F   2???           00680         goto report_next ; keypressed = D "0" = "scroll up"
+0290   2???           00681         goto unused_key ; keypressed = E "#"
+0291   2???           00682         goto startrun ; keypressed = F "D" = "run"
+0292                  00683 unused_key
+0292                  00684 keyresp_next
+0292                  00685 wait_release
+0292   1886           00686         btfsc KEYPAD_DA ; Wait until key is released????
+0293   2???           00687         goto wait_release ; !!!!!!!!!!time
+0294   2???           00688         call display
+                      00689         ; reset timeout!!!!!!!!!!
+0295   0008           00690         return
+0296                  00691 realtime
+0296   3002           00692         movlw PHASE_REALTIME
+0297   00CE           00693         movwf phase
+0298   01C9           00694         clrf line_num
+0299   2???           00695         goto keyresp_next
+029A                  00696 report
+029A   3004           00697         movlw PHASE_REPORT ; assuem log_total <> 0
+029B   08CB           00698         movf log_total, f
+029C   1903           00699         btfsc STATUS, Z
+029D   3003           00700         movlw PHASE_NOREPORT ; log_total == 0, no report
+029E   00CE           00701         movwf phase
+029F   01C9           00702         clrf line_num
+02A0   2???           00703         goto keyresp_next
+02A1                  00704 report_last
+                      00705 ; !!!! some ideas: must in REPORT phase; no change in line_num if at last report;
+                      00706 ; do not go through report; if enter from other phase same fn to report;
+                      00707 ; display report# and can go across upper/lower limit
+02A1   08CB           00708         movf log_total, f
+02A2   1903           00709         btfsc STATUS, Z
+02A3   2???           00710         goto report ; log_total == 0, no report!!!!
+                      00711         ; lower bound = (log_next - log_total + MAXLOG) MOD MAXLOG
+02A4   084B           00712         movf log_total, w ; get lower bound
+02A5   024C           00713         subwf log_next, w
+02A6   3E0C           00714         addlw MAXLOG
+                      00715         MODLW MAXLOG
+02A7   00A2               M     movwf arith_temp
+02A8   300C               M     movlw MAXLOG
+02A9   2???               M     call divfn
+02AA   0822               M     movf arith_temp, w
+02AB   024F           00716         subwf report_num, w
+02AC   1903           00717         btfsc STATUS, Z
+02AD   2???           00718         goto report ; current report at lower bound!!!!"This is the last report"!!!!
+02AE   034F           00719         decf report_num, w ; get last report
+02AF   3E0C           00720         addlw MAXLOG ; make sure report_num between 0 and MAXLOG - 1
+                      00721         MODLW MAXLOG
+02B0   00A2               M     movwf arith_temp
+02B1   300C               M     movlw MAXLOG
+02B2   2???               M     call divfn
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+02B3   0822               M     movf arith_temp, w
+02B4   00CF           00722         movwf report_num
+02B5   2???           00723         call readlog
+02B6   2???           00724         goto report
+02B7                  00725 report_next
+02B7   08CB           00726         movf log_total, f
+02B8   1903           00727         btfsc STATUS, Z
+02B9   2???           00728         goto report ; log_total == 0, no report!!!!
+                      00729         ; upper bound = (log_next - 1 + MAXLOG) MOD MAXLOG
+02BA   034C           00730         decf log_next, w ; get upper bound
+02BB   3E0C           00731         addlw MAXLOG
+                      00732         MODLW MAXLOG
+02BC   00A2               M     movwf arith_temp
+02BD   300C               M     movlw MAXLOG
+02BE   2???               M     call divfn
+02BF   0822               M     movf arith_temp, w
+02C0   024F           00733         subwf report_num, w
+02C1   1903           00734         btfsc STATUS, Z
+02C2   2???           00735         goto report ; current report at upper bound!!!!
+02C3   0A4F           00736         incf report_num, w ; get next report
+                      00737         MODLW MAXLOG ; make sure report_num between 0 and MAXLOG - 1
+02C4   00A2               M     movwf arith_temp
+02C5   300C               M     movlw MAXLOG
+02C6   2???               M     call divfn
+02C7   0822               M     movf arith_temp, w
+02C8   00CF           00738         movwf report_num
+02C9   2???           00739         call readlog
+02CA   2???           00740         goto report
+02CB                  00741 scroll_up
+02CB   3004           00742         movlw PHASE_REPORT ; test phase == PHASE_REPORT
+02CC   024E           00743         subwf phase, w
+02CD   1D03           00744         btfss STATUS, Z
+02CE   2???           00745         goto keyresp_next ; phase <> PHASE_REPORT, do nothing
+02CF   08C9           00746         movf line_num, f ; phase == PHASE_REPORT, test line_num == 0
+02D0   1D03           00747         btfss STATUS, Z
+02D1   03C9           00748         decf line_num, f ; line_num <> 0, decrease line_num (scroll up)
+02D2   2???           00749         goto keyresp_next
+02D3                  00750 scroll_down
+02D3   3004           00751         movlw PHASE_REPORT ; test phase == PHASE_REPORT
+02D4   024E           00752         subwf phase, w
+02D5   1D03           00753         btfss STATUS, Z
+02D6   2???           00754         goto keyresp_next ; phase <> PHASE_REPORT, do nothing
+02D7   3006           00755         movlw MAXLINE ; phase == PHASE_REPORT, test line_num == MAXLINE????
+02D8   0249           00756         subwf line_num, w
+02D9   1D03           00757         btfss STATUS, Z
+02DA   0AC9           00758         incf line_num, f ; line_num <> MAXLINE, increase line_num (scroll down)
+02DB   2???           00759         goto keyresp_next
+02DC                  00760 startrun
+02DC   3005           00761         movlw PHASE_RUN
+02DD   00CE           00762         movwf phase
+02DE                  00763 initrun
+02DE   2???           00764         call LCD_clear ; clear LCD display
+                      00765         MOVLF FSR, LCDline
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 21
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+02DF   3038               M         movlw LCDline
+02E0   0084               M         movwf FSR
+                      00766         COPY_STRING str_pat1
+02E1   30??               M     movlw str_pat1
+02E2   2???               M     call copystring
+02E3   2???           00767         call writeline
+02E4   01D2           00768         clrf temp3 ; number of valid numbers entered
+02E5                  00769 initrun_pat
+02E5   1C86           00770         btfss KEYPAD_DA ; Wait until data is available from the keypad
+02E6   2???           00771         goto initrun_pat
+02E7   0E06           00772         swapf PORTB, W ; Read PortB<7:4> into W<3:0>
+02E8   390F           00773         andlw 0x0F
+02E9   3E??           00774         addlw char_keynumber
+02EA   2???           00775         call literal ; Convert keypad value to LCD character (value is still held in W)
+02EB   3E00           00776         addlw 0x00
+02EC   1903           00777         btfsc STATUS, Z ; test for valid input (number)
+02ED   2???           00778         goto initrun_pat1rl
+02EE   00D1           00779         movwf temp2 ; hold the value
+02EF   2???           00780         call LCD_wt ; Write the value in W to LCD
+02F0   3030           00781         movlw 0x30
+02F1   02D1           00782         subwf temp2, f ; convert ASCII to number
+02F2   0852           00783         movf temp3, w
+02F3                  00784 initrun_pat1
+02F3   0851           00785         movf temp2, w
+02F4   00E4           00786         movwf pat1
+02F5   0AD2           00787         incf temp3, f
+02F6                  00788 initrun_pat1rl
+02F6   1886           00789         btfsc KEYPAD_DA ; Wait until key is released
+02F7   2???           00790         goto initrun_pat1rl
+02F8   3001           00791         movlw 0x01 ; 1 chars entered
+02F9   0252           00792         subwf temp3, w
+02FA   1C03           00793         btfss STATUS, C
+02FB   2???           00794         goto initrun_pat
+                      00795         ; pat2
+                      00796         ;call LCD_clear ; clear LCD display
+                      00797         MOVLF FSR, LCDline
+02FC   3038               M         movlw LCDline
+02FD   0084               M         movwf FSR
+02FE   2???           00798         call LCD_line2
+                      00799         COPY_STRING str_pat2
+02FF   30??               M     movlw str_pat2
+0300   2???               M     call copystring
+0301   2???           00800         call writeline
+                      00801         ;call LCD_line2
+0302   01D2           00802         clrf temp3 ; number of valid numbers entered
+0303                  00803 initrun_patt
+0303   1C86           00804         btfss KEYPAD_DA ; Wait until data is available from the keypad
+0304   2???           00805         goto initrun_patt
+0305   0E06           00806         swapf PORTB, W ; Read PortB<7:4> into W<3:0>
+0306   390F           00807         andlw 0x0F
+0307   3E??           00808         addlw char_keynumber
+0308   2???           00809         call literal ; Convert keypad value to LCD character (value is still held in W)
+0309   3E00           00810         addlw 0x00
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 22
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+030A   1903           00811         btfsc STATUS, Z ; test for valid input (number)
+030B   2???           00812         goto initrun_pat2rl
+030C   00D1           00813         movwf temp2 ; hold the value
+030D   2???           00814         call LCD_wt ; Write the value in W to LCD
+030E   3030           00815         movlw 0x30
+030F   02D1           00816         subwf temp2, f ; convert ASCII to number
+0310   0852           00817         movf temp3, w
+0311                  00818 initrun_pat2
+0311   0851           00819         movf temp2, w
+0312   00E5           00820         movwf pat2
+0313   0AD2           00821         incf temp3, f
+0314                  00822 initrun_pat2rl
+0314   1886           00823         btfsc KEYPAD_DA ; Wait until key is released
+0315   2???           00824         goto initrun_pat2rl
+0316   3001           00825         movlw 0x01 ; 1 chars entered
+0317   0252           00826         subwf temp3, w
+0318   1C03           00827         btfss STATUS, C
+0319   2???           00828         goto initrun_patt
+031A   01C9           00829         clrf line_num
+                      00830         ;!!!! call display
+031B   2???           00831         call LCD_clear ; clear LCD display
+                      00832         MOVLF FSR, LCDline
+031C   3038               M         movlw LCDline
+031D   0084               M         movwf FSR
+                      00833         COPY_STRING str_running
+031E   30??               M     movlw str_running
+031F   2???               M     call copystring
+0320   2???           00834         call writeline
+0321   2???           00835         call run
+                      00836         MOVLF phase, PHASE_FINISH
+0322   3006               M         movlw 6
+0323   00CE               M         movwf phase
+0324   01C9           00837         clrf line_num
+0325   2???           00838         call display
+                      00839         ; call delay1sl
+                      00840         MOVLF phase, PHASE_REPORT
+0326   3004               M         movlw 4
+0327   00CE               M         movwf phase
+0328   01C9           00841         clrf line_num
+0329   2???           00842         call display
+                      00843         ; assume run time is very long, key has been released
+032A   0008           00844         return
+032B                  00845 stoprun
+032B   2???           00846         goto keyresp_next
+                      00847 ;****************************
+                      00848 ;********keypad_timeout******
+032C                  00849 keypad_timeout
+032C   08CD           00850         movf newsec, f
+032D   1903           00851         btfsc STATUS, Z
+032E   2???           00852         goto kp_to_nonewsec ; newsec == 0(FALSE), skip
+032F   2???           00853         call display ; newsec == TRUE, display the new sec
+0330   01CD           00854         clrf newsec
+0331                  00855 kp_to_nonewsec
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 23
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00856 ; SLEEP test goes here!!!!
+0331   0008           00857         return
+                      00858 ;****************************
+                      00859 ;***********makeline*********
+0332                  00860 makeline
+0332   00D1           00861         movwf temp2 ; line#
+                      00862         MOVLF FSR, LCDline ; start from LCDline
+0333   3038               M         movlw LCDline
+0334   0084               M         movwf FSR
+0335   084E           00863         movf phase, w
+                      00864         TABLE ; switch (phase)
+  0000                    M         local tablename
+0336   00??               M         movwf table_temp
+0337   30??               M         movlw HIGH tablename
+0338   008A               M         movwf PCLATH
+0339   08??               M         movf table_temp, w
+033A   3E??               M         addlw LOW tablename
+033B   1803               M         btfsc STATUS, C
+033C   0A8A               M         incf PCLATH, f
+033D   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+033E                      M         tablename
+033E   2???           00865         goto ML_hdinit ; phase == 0
+033F   2???           00866         goto ML_rtcinit ; phase == 1
+0340   2???           00867         goto ML_realtime ; phase == 2
+0341   2???           00868         goto ML_noreport ; phase == 3
+0342   2???           00869         goto ML_report ; phase == 4
+0343   2???           00870         goto ML_run ; phase == 5
+0344   2???           00871         goto ML_finish ; phase == 6
+0345                  00872 ML_hdinit
+0345   0851           00873         movf temp2, w
+                      00874         TABLE ; switch (temp2(line#))
+  0000                    M         local tablename
+0346   00??               M         movwf table_temp
+0347   30??               M         movlw HIGH tablename
+0348   008A               M         movwf PCLATH
+0349   08??               M         movf table_temp, w
+034A   3E??               M         addlw LOW tablename
+034B   1803               M         btfsc STATUS, C
+034C   0A8A               M         incf PCLATH, f
+034D   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+034E                      M         tablename
+034E   2???           00875         goto ML_hdinit_0 ; line# == 0
+034F   2???           00876         goto ML_hdinit_1 ; line# == 1
+0350                  00877 ML_rtcinit ; display do not use this function
+                      00878         COPY_STRING str_null ; null termination
+0350   30??               M     movlw str_null
+0351   2???               M     call copystring
+0352   0008           00879         return
+0353                  00880 ML_realtime
+0353   0851           00881         movf temp2, w
+                      00882         TABLE ; switch (temp2(line#))
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 24
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+  0000                    M         local tablename
+0354   00??               M         movwf table_temp
+0355   30??               M         movlw HIGH tablename
+0356   008A               M         movwf PCLATH
+0357   08??               M         movf table_temp, w
+0358   3E??               M         addlw LOW tablename
+0359   1803               M         btfsc STATUS, C
+035A   0A8A               M         incf PCLATH, f
+035B   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+035C                      M         tablename
+035C   2???           00883         goto ML_realtime_0 ; line# == 0
+035D   2???           00884         goto ML_realtime_1 ; line# == 1
+035E                  00885 ML_noreport
+035E   0851           00886         movf temp2, w
+                      00887         TABLE ; switch (temp2(line#))
+  0000                    M         local tablename
+035F   00??               M         movwf table_temp
+0360   30??               M         movlw HIGH tablename
+0361   008A               M         movwf PCLATH
+0362   08??               M         movf table_temp, w
+0363   3E??               M         addlw LOW tablename
+0364   1803               M         btfsc STATUS, C
+0365   0A8A               M         incf PCLATH, f
+0366   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+0367                      M         tablename
+0367   2???           00888         goto ML_noreport_0 ; line# == 0
+0368   2???           00889         goto ML_noreport_1 ; line# == 1
+0369                  00890 ML_report
+0369   0851           00891         movf temp2, w
+                      00892         TABLE ; switch (temp2(line#))
+  0000                    M         local tablename
+036A   00??               M         movwf table_temp
+036B   30??               M         movlw HIGH tablename
+036C   008A               M         movwf PCLATH
+036D   08??               M         movf table_temp, w
+036E   3E??               M         addlw LOW tablename
+036F   1803               M         btfsc STATUS, C
+0370   0A8A               M         incf PCLATH, f
+0371   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+0372                      M         tablename
+0372   2???           00893         goto ML_report_0 ; line# == 0
+0373   2???           00894         goto ML_report_1 ; line# == 1
+0374   2???           00895         goto ML_report_2 ; line# == 2
+0375   2???           00896         goto ML_report_3 ; line# == 3
+0376   2???           00897         goto ML_report_4 ; line# == 4
+0377   2???           00898         goto ML_report_5 ; line# == 5
+0378   2???           00899     goto ML_report_6 ; line# == 6
+0379   2???           00900     goto ML_report_7 ; line# == 7
+037A   2???           00901     goto ML_report_8 ; line# == 8
+037B                  00902 ML_run
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 25
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+037B   0851           00903         movf temp2, w
+                      00904         TABLE ; switch (temp2(line#))
+  0000                    M         local tablename
+037C   00??               M         movwf table_temp
+037D   30??               M         movlw HIGH tablename
+037E   008A               M         movwf PCLATH
+037F   08??               M         movf table_temp, w
+0380   3E??               M         addlw LOW tablename
+0381   1803               M         btfsc STATUS, C
+0382   0A8A               M         incf PCLATH, f
+0383   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+0384                      M         tablename
+0384   2???           00905         goto ML_run_0 ; line# == 0
+0385   2???           00906         goto ML_run_1 ; line# == 1
+0386                  00907 ML_finish
+0386   0851           00908         movf temp2, w
+                      00909         TABLE ; switch (temp2(line#))
+  0000                    M         local tablename
+0387   00??               M         movwf table_temp
+0388   30??               M         movlw HIGH tablename
+0389   008A               M         movwf PCLATH
+038A   08??               M         movf table_temp, w
+038B   3E??               M         addlw LOW tablename
+038C   1803               M         btfsc STATUS, C
+038D   0A8A               M         incf PCLATH, f
+038E   0082               M         movwf PCL
+Warning[207]: Found label after column 1. (tablename)
+038F                      M         tablename
+038F   2???           00910         goto ML_finish_0 ; line# == 0
+0390   2???           00911         goto ML_finish_1 ; line# == 1
+0391                  00912 ML_hdinit_0
+                      00913         COPY_STRING str_init
+0391   30??               M     movlw str_init
+0392   2???               M     call copystring
+0393   0008           00914         return
+0394                  00915 ML_hdinit_1
+                      00916         COPY_STRING str_null
+0394   30??               M     movlw str_null
+0395   2???               M     call copystring
+0396   0008           00917         return
+0397                  00918 ML_realtime_0
+                      00919         COPY_STRING str_yearhead
+0397   30??               M     movlw str_yearhead
+0398   2???               M     call copystring
+                      00920         COPY_DEC2 rt_year
+0399   0854               M         movf rt_year,   w
+039A   00A0               M         movwf arg
+039B   3002               M         movlw 0x02
+039C   00A1               M         movwf arg2
+039D   2???               M         call copydec
+                      00921         COPY_STRING str_dash
+039E   30??               M     movlw str_dash
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 26
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+039F   2???               M     call copystring
+                      00922         COPY_DEC2 rt_month
+03A0   0855               M         movf rt_month,  w
+03A1   00A0               M         movwf arg
+03A2   3002               M         movlw 0x02
+03A3   00A1               M         movwf arg2
+03A4   2???               M         call copydec
+                      00923         COPY_STRING str_dash
+03A5   30??               M     movlw str_dash
+03A6   2???               M     call copystring
+                      00924         COPY_DEC2 rt_day
+03A7   0856               M         movf rt_day,    w
+03A8   00A0               M         movwf arg
+03A9   3002               M         movlw 0x02
+03AA   00A1               M         movwf arg2
+03AB   2???               M         call copydec
+03AC   0008           00925         return
+03AD                  00926 ML_realtime_1
+                      00927         COPY_DEC2 rt_hour
+03AD   0857               M         movf rt_hour,   w
+03AE   00A0               M         movwf arg
+03AF   3002               M         movlw 0x02
+03B0   00A1               M         movwf arg2
+03B1   2???               M         call copydec
+                      00928         COPY_STRING str_colon
+03B2   30??               M     movlw str_colon
+03B3   2???               M     call copystring
+                      00929         COPY_DEC2 rt_min
+03B4   0858               M         movf rt_min,    w
+03B5   00A0               M         movwf arg
+03B6   3002               M         movlw 0x02
+03B7   00A1               M         movwf arg2
+03B8   2???               M         call copydec
+                      00930         COPY_STRING str_colon
+03B9   30??               M     movlw str_colon
+03BA   2???               M     call copystring
+                      00931         COPY_DEC2 rt_sec
+03BB   0859               M         movf rt_sec,    w
+03BC   00A0               M         movwf arg
+03BD   3002               M         movlw 0x02
+03BE   00A1               M         movwf arg2
+03BF   2???               M         call copydec
+03C0   0008           00932         return
+03C1                  00933 ML_noreport_0
+                      00934         COPY_STRING str_noreport
+03C1   30??               M     movlw str_noreport
+03C2   2???               M     call copystring
+03C3   0008           00935         return
+03C4                  00936 ML_noreport_1
+                      00937         COPY_STRING str_null
+03C4   30??               M     movlw str_null
+03C5   2???               M     call copystring
+03C6   0008           00938         return
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 27
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+03C7                  00939 ML_report_0
+                      00940         COPY_STRING str_entry
+03C7   30??               M     movlw str_entry
+03C8   2???               M     call copystring
+                      00941         ; log# = (log_total - log_next + report_num + 1 + MAXLOG) MOD MAXLOG
+                      00942         ; also log# = MAXLOG if result == 0
+03C9   084C           00943         movf log_next, w
+03CA   024B           00944         subwf log_total, w
+03CB   074F           00945         addwf report_num, w
+03CC   3E01           00946         addlw 0x01
+03CD   3E0C           00947         addlw MAXLOG
+                      00948         MODLW MAXLOG
+03CE   00A2               M     movwf arith_temp
+03CF   300C               M     movlw MAXLOG
+03D0   2???               M     call divfn
+03D1   0822               M     movf arith_temp, w
+03D2   1903           00949         btfsc STATUS, Z
+03D3   300C           00950         movlw MAXLOG ; result == 0, log# = MAXLOG
+03D4   00D2           00951         movwf temp3
+                      00952         COPY_DEC2 temp3
+03D5   0852               M         movf temp3,     w
+03D6   00A0               M         movwf arg
+03D7   3002               M         movlw 0x02
+03D8   00A1               M         movwf arg2
+03D9   2???               M         call copydec
+                      00953         COPY_STRING char_slash
+03DA   30??               M     movlw char_slash
+03DB   2???               M     call copystring
+                      00954         COPY_DEC2 log_total
+03DC   084B               M         movf log_total, w
+03DD   00A0               M         movwf arg
+03DE   3002               M         movlw 0x02
+03DF   00A1               M         movwf arg2
+03E0   2???               M         call copydec
+03E1   0008           00955         return
+03E2                  00956 ML_report_1
+                      00957         COPY_STRING str_start
+03E2   30??               M     movlw str_start
+03E3   2???               M     call copystring
+                      00958         COPY_DEC2 st_hour
+03E4   085D               M         movf st_hour,   w
+03E5   00A0               M         movwf arg
+03E6   3002               M         movlw 0x02
+03E7   00A1               M         movwf arg2
+03E8   2???               M         call copydec
+                      00959         COPY_STRING str_colon
+03E9   30??               M     movlw str_colon
+03EA   2???               M     call copystring
+                      00960         COPY_DEC2 st_min
+03EB   085E               M         movf st_min,    w
+03EC   00A0               M         movwf arg
+03ED   3002               M         movlw 0x02
+03EE   00A1               M         movwf arg2
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 28
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+03EF   2???               M         call copydec
+                      00961         COPY_STRING str_colon
+03F0   30??               M     movlw str_colon
+03F1   2???               M     call copystring
+                      00962         COPY_DEC2 st_sec
+03F2   085F               M         movf st_sec,    w
+03F3   00A0               M         movwf arg
+03F4   3002               M         movlw 0x02
+03F5   00A1               M         movwf arg2
+03F6   2???               M         call copydec
+03F7   0008           00963         return
+03F8                  00964 ML_report_2
+                      00965         COPY_STRING str_finish
+03F8   30??               M     movlw str_finish
+03F9   2???               M     call copystring
+                      00966         COPY_DEC2 end_hour
+03FA   0860               M         movf end_hour,  w
+03FB   00A0               M         movwf arg
+03FC   3002               M         movlw 0x02
+03FD   00A1               M         movwf arg2
+03FE   2???               M         call copydec
+                      00967         COPY_STRING str_colon
+03FF   30??               M     movlw str_colon
+0400   2???               M     call copystring
+                      00968         COPY_DEC2 end_min
+0401   0861               M         movf end_min,   w
+0402   00A0               M         movwf arg
+0403   3002               M         movlw 0x02
+0404   00A1               M         movwf arg2
+0405   2???               M         call copydec
+                      00969         COPY_STRING str_colon
+0406   30??               M     movlw str_colon
+0407   2???               M     call copystring
+                      00970         COPY_DEC2 end_sec
+0408   0862               M         movf end_sec,   w
+0409   00A0               M         movwf arg
+040A   3002               M         movlw 0x02
+040B   00A1               M         movwf arg2
+040C   2???               M         call copydec
+040D   0008           00971         return
+040E                  00972 ML_report_3
+                      00973         COPY_STRING str_runtime
+040E   30??               M     movlw str_runtime
+040F   2???               M     call copystring
+                      00974         COPY_DEC1 runtime
+0410   0863               M     movf runtime,   w
+0411   00A0               M     movwf arg
+0412   3001               M     movlw 0x01
+0413   00A1               M     movwf arg2
+0414   2???               M     call copydec
+                      00975         COPY_STRING str_s
+0415   30??               M     movlw str_s
+0416   2???               M     call copystring
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 29
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0417   0008           00976         return
+0418                  00977 ML_report_4
+                      00978         COPY_STRING str_pat1
+0418   30??               M     movlw str_pat1
+0419   2???               M     call copystring
+                      00979         COPY_DEC1 pat1
+041A   0864               M     movf pat1,      w
+041B   00A0               M     movwf arg
+041C   3001               M     movlw 0x01
+041D   00A1               M     movwf arg2
+041E   2???               M     call copydec
+041F   0008           00980         return
+0420                  00981 ML_report_5
+                      00982         COPY_STRING str_pat2
+0420   30??               M     movlw str_pat2
+0421   2???               M     call copystring
+                      00983     COPY_DEC1 pat2
+0422   0865               M     movf pat2,      w
+0423   00A0               M     movwf arg
+0424   3001               M     movlw 0x01
+0425   00A1               M     movwf arg2
+0426   2???               M     call copydec
+0427   0008           00984         return
+0428                  00985 ML_report_6
+                      00986     COPY_STRING str_redr
+0428   30??               M     movlw str_redr
+0429   2???               M     call copystring
+                      00987     COPY_DEC1 redr
+042A   0866               M     movf redr,      w
+042B   00A0               M     movwf arg
+042C   3001               M     movlw 0x01
+042D   00A1               M     movwf arg2
+042E   2???               M     call copydec
+042F   0008           00988     return
+0430                  00989 ML_report_7
+                      00990     COPY_STRING str_camelr
+0430   30??               M     movlw str_camelr
+0431   2???               M     call copystring
+                      00991     COPY_DEC1 camelr
+0432   0867               M     movf camelr,    w
+0433   00A0               M     movwf arg
+0434   3001               M     movlw 0x01
+0435   00A1               M     movwf arg2
+0436   2???               M     call copydec
+0437   0008           00992     return
+0438                  00993 ML_report_8
+                      00994     COPY_STRING str_null
+0438   30??               M     movlw str_null
+0439   2???               M     call copystring
+043A   0008           00995     return
+043B                  00996 ML_run_0
+                      00997         COPY_STRING str_running
+043B   30??               M     movlw str_running
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 30
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+043C   2???               M     call copystring
+043D   0008           00998         return
+043E                  00999 ML_run_1
+                      01000         COPY_STRING str_null
+043E   30??               M     movlw str_null
+043F   2???               M     call copystring
+0440   0008           01001         return
+0441                  01002 ML_finish_0
+                      01003         COPY_STRING str_insp_fin
+0441   30??               M     movlw str_insp_fin
+0442   2???               M     call copystring
+0443   0008           01004         return
+0444                  01005 ML_finish_1 ; ALL PASS????!!!!
+                      01006         COPY_STRING str_runtime
+0444   30??               M     movlw str_runtime
+0445   2???               M     call copystring
+                      01007         COPY_DEC1 runtime
+0446   0863               M     movf runtime,   w
+0447   00A0               M     movwf arg
+0448   3001               M     movlw 0x01
+0449   00A1               M     movwf arg2
+044A   2???               M     call copydec
+                      01008         COPY_STRING str_s
+044B   30??               M     movlw str_s
+044C   2???               M     call copystring
+044D   0008           01009         return
+                      01010 ;****************************
+                      01011 ;***********mulfn************
+044E                  01012 mulfn
+044E   1003           01013     bcf STATUS, C ;clear C bit if arith_temp==0
+044F   00A3           01014     movwf arith_temp2 ;the multiplier L is stored in arith_temp2
+0450   3000           01015     movlw 0x00
+0451   08A2           01016     movf arith_temp, f ; check if arith_temp is 0, changes Z bit in STATUS
+0452   1903           01017     btfsc STATUS, Z
+0453   0008           01018     return ; if arith_temp is zero, return
+0454                  01019 mulfn_loop
+0454   0723           01020     addwf arith_temp2, w ; w=0+arith_temp2+arith_temp2+...
+0455   1803           01021     btfsc STATUS, C
+0456   2???           01022     goto mulfn_overflow
+0457   0BA2           01023     decfsz arith_temp, f
+0458   2???           01024     goto mulfn_loop
+0459                  01025 mulfn_overflow
+0459   0008           01026     return
+                      01027 ;****************************
+                      01028 ;*********readlog************
+045A                  01029 readlog
+Warning[207]: Found label after column 1. (readlog)
+045A                  01030     readlog
+045A   00D1           01031         movwf temp2 ; save the index in temp2
+                      01032         ; starting address (indirect) offset = (index / MAXLOGBANK) * 0x80 + 0x10
+                      01033         DIVLW MAXLOGBANK
+045B   00A2               M     movwf arith_temp ;store the divident
+045C   3006               M     movlw MAXLOGBANK ;move divisor into w
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 31
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+045D   2???               M     call divfn
+                      01034         MULLW 0x80
+045E   00A2               M     movwf arith_temp
+045F   3080               M     movlw 0x80
+0460   2???               M     call mulfn
+0461   3E10           01035         addlw 0x10
+0462   00D0           01036         movwf temp ; save in temp
+                      01037         ; starting address (indirect) = (index MOD MAXLOGBANK)*LOGLENGTH + offset
+0463   0851           01038         movf temp2, w ; resume index
+                      01039         MODLW MAXLOGBANK ; W = index mod MAXLOGBANK
+0464   00A2               M     movwf arith_temp
+0465   3006               M     movlw MAXLOGBANK
+0466   2???               M     call divfn
+0467   0822               M     movf arith_temp, w
+                      01040         MULLW LOGLENGTH
+0468   00A2               M     movwf arith_temp
+0469   3010               M     movlw LOGLENGTH
+046A   2???               M     call mulfn
+046B   0750           01041         addwf temp, w
+                      01042         ; read easy-access variables
+046C   1783           01043         bsf STATUS, IRP ; BANK2&3 indirect access
+046D   0084           01044         movwf FSR ; log addr + 0
+                      01045         MOVFF runtime, INDF
+046E   0800               M         movf INDF, w
+046F   00E3               M         movwf runtime
+0470   0A84           01046         incf FSR, f ; log addr + 1
+0471   0E00           01047         swapf INDF, w ; swap upper 4 bits and lower 4 bits
+0472   390F           01048         andlw 0x0F ; mask the lower 4 bits only
+0473   00DA           01049         movwf st_year
+0474   0800           01050         movf INDF, w
+0475   390F           01051         andlw 0x0F ; mask the lower 4 bits only
+0476   00DB           01052         movwf st_month
+0477   0A84           01053         incf FSR, f ; log addr + 2
+                      01054         MOVFF st_day, INDF
+0478   0800               M         movf INDF, w
+0479   00DC               M         movwf st_day
+047A   0A84           01055         incf FSR, f ; log addr + 3
+                      01056         MOVFF st_hour, INDF
+047B   0800               M         movf INDF, w
+047C   00DD               M         movwf st_hour
+047D   0A84           01057         incf FSR, f ; log addr + 4
+                      01058         MOVFF st_min, INDF
+047E   0800               M         movf INDF, w
+047F   00DE               M         movwf st_min
+0480   0A84           01059         incf FSR, f ; log addr + 5
+                      01060         MOVFF st_sec, INDF
+0481   0800               M         movf INDF, w
+0482   00DF               M         movwf st_sec
+0483   0A84           01061         incf FSR, f ; log addr + 6
+                      01062     MOVFF pat1, INDF
+0484   0800               M         movf INDF, w
+0485   00E4               M         movwf pat1
+0486   0A84           01063         incf FSR, f ; log addr + 7
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 32
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      01064         MOVFF pat2, INDF
+0487   0800               M         movf INDF, w
+0488   00E5               M         movwf pat2
+0489   0A84           01065         incf FSR, f ; log addr + 8
+                      01066     MOVFF redr, INDF
+048A   0800               M         movf INDF, w
+048B   00E6               M         movwf redr
+048C   0A84           01067     incf FSR, f
+                      01068     MOVFF camelr, INDF
+048D   0800               M         movf INDF, w
+048E   00E7               M         movwf camelr
+048F   0A84           01069     incf FSR, f
+                      01070          ; read layout[], cl_total and cl_pass
+                      01071         MOVFF temp, FSR ; the address of log entry (start at + 6)
+0490   0804               M         movf FSR,  w
+0491   00D0               M         movwf temp
+0492                  01072 readlog_layoutnext
+                      01073         ; calculate end time
+                      01074         MOVFF end_hour, st_hour
+0492   085D               M         movf st_hour, w
+0493   00E0               M         movwf end_hour
+                      01075         MOVFF end_min, st_min
+0494   085E               M         movf st_min, w
+0495   00E1               M         movwf end_min
+                      01076         MOVFF end_sec, st_sec
+0496   085F               M         movf st_sec, w
+0497   00E2               M         movwf end_sec
+0498   0863           01077         movf runtime, w
+                      01078         DIVLW .60
+0499   00A2               M     movwf arith_temp ;store the divident
+049A   303C               M     movlw .60 ;move divisor into w
+049B   2???               M     call divfn
+049C   07E1           01079         addwf end_min, f ; end_min = st_min + runtime / .60
+049D   0863           01080         movf runtime, w
+                      01081         MODLW .60
+049E   00A2               M     movwf arith_temp
+049F   303C               M     movlw .60
+04A0   2???               M     call divfn
+04A1   0822               M     movf arith_temp, w
+04A2   07E2           01082         addwf end_sec, f ; end_sec = st_sec + runtime MOD .60
+04A3   303C           01083         movlw .60 ; test if 60s
+04A4   0262           01084         subwf end_sec, w ; w = end_sec - 60
+04A5   1C03           01085         btfss STATUS, C
+04A6   2???           01086         goto readlog_endsec_next; end_sec < 60, end_sec OK
+04A7   303C           01087         movlw .60 ; end_sec >= 60, +1min, -60s
+04A8   02E2           01088         subwf end_sec, f
+04A9   0AE1           01089         incf end_min, f
+04AA                  01090 readlog_endsec_next
+04AA   303C           01091         movlw .60 ; test if 60min
+04AB   0261           01092         subwf end_min, w
+04AC   1C03           01093         btfss STATUS, C
+04AD   2???           01094         goto readlog_next ; end_min < 60, end_min OK, end_hour should OK
+04AE   303C           01095         movlw .60 ; end_min >= 60, +1h, -60min
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 33
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+04AF   02E1           01096         subwf end_min, f
+04B0   0AE0           01097         incf end_hour, f
+04B1   3018           01098         movlw .24 ; test if 24h
+04B2   0260           01099         subwf end_hour, w
+04B3   1C03           01100         btfss STATUS, C
+04B4   2???           01101         goto readlog_next
+04B5   3018           01102         movlw .24 ; >24h, -24h
+04B6   02E0           01103         subwf end_hour, f
+04B7                  01104 readlog_next
+04B7   1383           01105         bcf STATUS, IRP ; back to BANK0&1 indirect access
+04B8   0008           01106         return
+                      01107 ;****************************
+                      01108 ;*********run************
+04B9                  01109 run
+                      01110     ; store sarting time
+                      01111         MOVFF st_year, rt_year
+04B9   0854               M         movf rt_year, w
+04BA   00DA               M         movwf st_year
+                      01112         MOVFF st_month, rt_month
+04BB   0855               M         movf rt_month, w
+04BC   00DB               M         movwf st_month
+                      01113         MOVFF st_day, rt_day
+04BD   0856               M         movf rt_day, w
+04BE   00DC               M         movwf st_day
+                      01114         MOVFF st_hour, rt_hour
+04BF   0857               M         movf rt_hour, w
+04C0   00DD               M         movwf st_hour
+                      01115         MOVFF st_min, rt_min
+04C1   0858               M         movf rt_min, w
+04C2   00DE               M         movwf st_min
+                      01116         MOVFF st_sec, rt_sec
+04C3   0859               M         movf rt_sec, w
+04C4   00DF               M         movwf st_sec
+                      01117     ; Main operation goes below
+04C5                  01118 run_loop
+04C5   100B           01119     bcf INTCON, RBIF
+04C6   158B           01120         bsf INTCON, RBIE ; enable keypad interrept
+04C7                  01121 run_hardware_bottom_motor
+04C7                  01122 rs_hardware_loop
+04C7   1087           01123     bcf PORTC, 1
+04C8   1587           01124     bsf PORTC, 3
+04C9   ???? ????      01125     pagesel delay5ms
+                      01126     ;call delay5ms
+04CB   301E           01127     movlw .30
+04CC   2???           01128     call delayX50usm
+04CD   1187           01129     bcf PORTC, 3
+04CE   2???           01130     call delay5ms
+04CF   ???? ????      01131     pagesel rs_hardware_loop
+04D1   1E87           01132     btfss PORTC, 5
+04D2   2???           01133     goto rs_hardware_loop
+04D3   0187           01134     clrf PORTC
+                      01135     ;movlw B'10000000'
+                      01136     ;movwf TRISC
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 34
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+04D4   1087           01137     bcf PORTC, 1
+04D5   1187           01138     bcf PORTC, 3
+04D6                  01139 run_sequence1
+04D6   ???? ????      01140     pagesel run_expat1
+04D8   3001           01141     movlw .1
+04D9   0264           01142     subwf pat1, w
+04DA   1903           01143     btfsc STATUS, Z
+04DB   2???           01144     call run_expat1
+04DC   ???? ????      01145     pagesel run_expat2
+04DE   3002           01146     movlw .2
+04DF   0264           01147     subwf pat1, w
+04E0   1903           01148     btfsc STATUS, Z
+04E1   2???           01149     call run_expat2
+04E2   ???? ????      01150     pagesel run_expat3
+04E4   3003           01151     movlw .3
+04E5   0264           01152     subwf pat1, w
+04E6   1903           01153     btfsc STATUS, Z
+04E7   2???           01154     call run_expat3
+04E8   ???? ????      01155     pagesel run_expat4
+04EA   3004           01156     movlw .4
+04EB   0264           01157     subwf pat1, w
+04EC   1903           01158     btfsc STATUS, Z
+04ED   2???           01159     call run_expat5
+04EE   ???? ????      01160     pagesel run_expat5
+04F0   3005           01161     movlw .5
+04F1   0264           01162     subwf pat1, w
+04F2   1903           01163     btfsc STATUS, Z
+04F3   2???           01164     call run_expat4
+04F4   ???? ????      01165     pagesel run_expat6
+04F6   3006           01166     movlw .6
+04F7   0264           01167     subwf pat1, w
+04F8   1903           01168     btfsc STATUS, Z
+04F9   2???           01169     call run_expat6
+                      01170     ; bsf PORTC, 1 = cw
+                      01171     ; bsf PORTC, 3 = ccw
+                      01172 
+                      01173 ; asdf
+                      01174     ; goto asdf
+04FA   ???? ????      01175     pagesel delayX100msm
+04FC   3005           01176     movlw .5
+04FD   2???           01177     call delayX100msm
+04FE   ???? ????      01178     pagesel asdf
+0500                  01179 asdf
+0500   1087           01180     bcf PORTC, 1
+0501   1587           01181     bsf PORTC, 3
+0502   ???? ????      01182     pagesel delay5ms
+0504   2???           01183     call delay5ms
+                      01184     ;movlw .40
+                      01185     ;call delayX50usm
+0505   1187           01186     bcf PORTC, 3
+0506   2???           01187     call delay5ms
+0507   ???? ????      01188     pagesel asdf
+0509   1E87           01189     btfss PORTC, 5
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 35
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+050A   2???           01190     goto asdf
+050B   ???? ????      01191     pagesel run_sequence1
+050D   0187           01192     clrf PORTC
+                      01193     ;movlw B'10000000'
+                      01194     ;movwf TRISC
+050E   1087           01195     bcf PORTC, 1
+050F   1187           01196     bcf PORTC, 3
+                      01197 
+0510   0000           01198     nop
+0511   ???? ????      01199     pagesel run_eexpat1
+0513   3001           01200     movlw .1
+0514   0265           01201     subwf pat2, w
+0515   1903           01202     btfsc STATUS, Z
+0516   2???           01203     call run_eexpat1
+0517   ???? ????      01204     pagesel run_eexpat2
+0519   3002           01205     movlw .2
+051A   0265           01206     subwf pat2, w
+051B   1903           01207     btfsc STATUS, Z
+051C   2???           01208     call run_eexpat2
+051D   ???? ????      01209     pagesel run_eexpat3
+051F   3003           01210     movlw .3
+0520   0265           01211     subwf pat2, w
+0521   1903           01212     btfsc STATUS, Z
+0522   2???           01213     call run_eexpat3
+0523   ???? ????      01214     pagesel run_eexpat4
+0525   3004           01215     movlw .4
+0526   0265           01216     subwf pat2, w
+0527   1903           01217     btfsc STATUS, Z
+0528   2???           01218     call run_eexpat5
+0529   ???? ????      01219     pagesel run_eexpat5
+052B   3005           01220     movlw .5
+052C   0265           01221     subwf pat2, w
+052D   1903           01222     btfsc STATUS, Z
+052E   2???           01223     call run_eexpat4
+052F   ???? ????      01224     pagesel run_eexpat6
+0531   3006           01225     movlw .6
+0532   0265           01226     subwf pat2, w
+0533   1903           01227     btfsc STATUS, Z
+0534   2???           01228     call run_eexpat6
+                      01229 
+                      01230     
+0535   ???? ????      01231     pagesel delay1sl
+0537   2???           01232     call delay1sl
+                      01233     ;call delay1sl
+0538   ???? ????      01234     pagesel delay1sl
+053A   1087           01235     bcf PORTC, 1
+053B   1587           01236     bsf PORTC, 3
+053C   3005           01237     movlw .5
+053D   2???           01238     call delayX100msm
+053E   2???           01239     call delay1sl
+                      01240     ;call delay1sl
+053F   1187           01241     bcf PORTC, 3
+0540                  01242 run_countchips
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 36
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      01243     STORE_FORCE fs_1
+0540   3068               M     movlw fs_1
+0541   2???               M     call forcesensor
+                      01244     STORE_FORCE fs_2
+0542   3069               M     movlw fs_2
+0543   2???               M     call forcesensor
+0544                  01245 run_end
+0544   118B           01246         bcf INTCON, RBIE ; disable keypad interrept
+                      01247         ; store end time
+                      01248         MOVFF end_hour, rt_hour
+0545   0857               M         movf rt_hour, w
+0546   00E0               M         movwf end_hour
+                      01249         MOVFF end_min, rt_min
+0547   0858               M         movf rt_min, w
+0548   00E1               M         movwf end_min
+                      01250         MOVFF end_sec, rt_sec
+0549   0859               M         movf rt_sec, w
+054A   00E2               M         movwf end_sec
+054B   2???           01251         call calcruntime
+054C   2???           01252         call writelog
+054D   00CF           01253         movwf report_num
+054E   0008           01254         return
+                      01255 ;****************************
+                      01256 ;*********writeline**********
+054F                  01257 writeline
+                      01258         MOVLF FSR, LCDline
+054F   3038               M         movlw LCDline
+0550   0084               M         movwf FSR
+0551                  01259 writeline_loop
+0551   0800           01260         movf INDF, w ; test INDF(char pointer to the string)==0(NULL)
+0552   1903           01261         btfsc STATUS, Z
+0553   0008           01262         return ; if end of string is reached (NULL)
+0554   2???           01263         call LCD_wt
+0555   0A84           01264         incf FSR, f
+0556   2???           01265         goto writeline_loop
+                      01266 ;****************************
+                      01267 ;********writelog************
+0557                  01268 writelog
+                      01269         ; starting address (indirect) offset = (log_next / MAXLOGBANK) * 0x80 + 0x10
+0557   084C           01270         movf log_next, w
+                      01271         DIVLW MAXLOGBANK
+0558   00A2               M     movwf arith_temp ;store the divident
+0559   3006               M     movlw MAXLOGBANK ;move divisor into w
+055A   2???               M     call divfn
+                      01272         MULLW 0x80
+055B   00A2               M     movwf arith_temp
+055C   3080               M     movlw 0x80
+055D   2???               M     call mulfn
+055E   3E10           01273         addlw 0x10
+055F   00D0           01274         movwf temp ; save in temp
+                      01275         ; starting address (indirect) = (log_next MOD MAXLOGBANK)*LOGLENGTH + offset
+0560   084C           01276         movf log_next, w
+                      01277         MODLW MAXLOGBANK ; W = log_next mod MAXLOGBANK
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 37
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0561   00A2               M     movwf arith_temp
+0562   3006               M     movlw MAXLOGBANK
+0563   2???               M     call divfn
+0564   0822               M     movf arith_temp, w
+                      01278         MULLW LOGLENGTH
+0565   00A2               M     movwf arith_temp
+0566   3010               M     movlw LOGLENGTH
+0567   2???               M     call mulfn
+0568   0750           01279         addwf temp, w
+                      01280         ; store easy-access variables
+0569   1783           01281         bsf STATUS, IRP ; BANK2&3 indirect access
+056A   0084           01282         movwf FSR ; log addr + 0
+                      01283         MOVFF INDF, runtime
+056B   0863               M         movf runtime, w
+056C   0080               M         movwf INDF
+056D   0A84           01284         incf FSR, f ; log addr + 1
+056E   0E5A           01285         swapf st_year, w
+056F   075B           01286         addwf st_month, w
+0570   0080           01287         movwf INDF
+0571   0A84           01288         incf FSR, f ; log addr + 2
+                      01289         MOVFF INDF, st_day
+0572   085C               M         movf st_day, w
+0573   0080               M         movwf INDF
+0574   0A84           01290         incf FSR, f ; log addr + 3
+                      01291         MOVFF INDF, st_hour
+0575   085D               M         movf st_hour, w
+0576   0080               M         movwf INDF
+0577   0A84           01292         incf FSR, f ; log addr + 4
+                      01293         MOVFF INDF, st_min
+0578   085E               M         movf st_min, w
+0579   0080               M         movwf INDF
+057A   0A84           01294         incf FSR, f ; log addr + 5
+                      01295         MOVFF INDF, st_sec
+057B   085F               M         movf st_sec, w
+057C   0080               M         movwf INDF
+057D   0A84           01296         incf FSR, f ; log addr + 6
+                      01297     MOVFF INDF, pat1
+057E   0864               M         movf pat1, w
+057F   0080               M         movwf INDF
+0580   0A84           01298         incf FSR, f ; log addr + 7
+                      01299     MOVFF INDF, pat2
+0581   0865               M         movf pat2, w
+0582   0080               M         movwf INDF
+0583   0A84           01300         incf FSR, f ; log addr + 8
+                      01301     MOVFF INDF, redr
+0584   0866               M         movf redr, w
+0585   0080               M         movwf INDF
+0586   0A84           01302     incf FSR, f
+                      01303     MOVFF INDF, camelr
+0587   0867               M         movf camelr, w
+0588   0080               M         movwf INDF
+0589   0A84           01304     incf FSR, f
+                      01305         ; store layout
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 38
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      01306         MOVFF temp, FSR ; the address of log entry (start at + 8)
+058A   0804               M         movf FSR,  w
+058B   00D0               M         movwf temp
+058C                  01307 writelog_layoutnext
+                      01308         ; calculate new log_next = (log_next + 1) MOD MAXLOG
+                      01309         MOVFF temp, log_next ; save current log index in temp
+058C   084C               M         movf log_next, w
+058D   00D0               M         movwf temp
+058E   0ACC           01310         incf log_next, f
+058F   300C           01311         movlw MAXLOG ; test if max log reached
+0590   024C           01312         subwf log_next, w ; log_next + 1 - MAXLOG
+0591   1C03           01313         btfss STATUS, C
+0592   3E0C           01314         addlw MAXLOG ; log_next + 1 < MAXLOG, add MAXLOG back
+0593   00CC           01315         movwf log_next ; log_next = (log_next + 1) MOD MAXLOG
+                      01316         ; calculate new log_total
+0594   300C           01317         movlw MAXLOG
+0595   024B           01318         subwf log_total, w ; log_total - MAXLOG
+0596   1C03           01319         btfss STATUS, C
+0597   0ACB           01320         incf log_total, f ; log_total < MAXLOG, increase total number
+0598   0850           01321         movf temp, w ; resume current log entry index
+0599   1383           01322         bcf STATUS, IRP ; back to BANK0&1 indirect access
+059A   0008           01323         return
+                      01324 ;****************************
+3F72                  01325     end
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 39
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000006
+ADCS1                             00000007
+ADDEN                             00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+BANK0                             
+BANK00                            
+BANK1                             
+BCLIE                             00000003
+BCLIF                             00000003
+BF                                00000000
+BRGH                              00000002
+C                                 00000000
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           0000001D
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCPR1                             00000015
+CCPR1H                            00000016
+CCPR1L                            00000015
+CCPR2                             0000001B
+CCPR2H                            0000001C
+CCPR2L                            0000001B
+CHS0                              00000003
+CHS1                              00000004
+CHS2                              00000005
+CKE                               00000006
+CKP                               00000004
+CL_ERR_BIT                        2
+CL_FN_BIT                         1
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 40
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CL_POS_BIT                        0
+COLS                              00000005
+COPY_DEC1                         
+COPY_DEC2                         
+COPY_DEC3                         
+COPY_STRING                       
+CREN                              00000004
+CSRC                              00000007
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+DCDOWNDELAY                       0000001E
+DEBUG                             
+DELAY_1800MS                      
+DELAY_2500MS                      
+DIVLW                             
+D_A                               00000005
+D_NOT_A                           00000005
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+F                                 00000001
+FALSE                             0x00
+FB_ROW4                           PORTC, 7
+FCALL                             
+FERR                              00000002
+FSNUM                             00000002
+FSR                               00000004
+FSR_temp                          00000002
+GCEN                              00000007
+GIE                               00000007
+GO                                00000002
+GO_DONE                           00000002
+GO_NOT_DONE                       00000002
+I2C_DATA                          00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+IBF                               00000007
+IBOV                              00000005
+INDF                              00000000
+INITVAL_ADCON0                    B'10000001'
+INITVAL_ADCON1                    B'00000100'
+INITVAL_OPTREG                    B'10000101'
+INITVAL_TRISA                     B'00101111'
+INITVAL_TRISB                     B'11110010'
+INITVAL_TRISC                     B'11100000'
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 41
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+INITVAL_TRISD                     B'00000000'
+INITVAL_TRISE                     B'00000000'
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IRP                               00000007
+KEYPAD_DA                         PORTB, 1
+LCD_E                             PORTD, 3
+LCD_PORT                          PORTD
+LCD_RS                            PORTD, 2
+LCD_clear                         00000000
+LCD_init                          00000000
+LCD_line2                         00000000
+LCD_out                           00000000
+LCD_wt                            00000000
+LCDline                           00000038
+LIGHTAVGX                         00000004
+LOGLENGTH                         00000010
+MAXCLINROW                        00000003
+MAXLINE                           00000006
+MAXLOG                            0000000C
+MAXLOGBANK                        00000006
+MAXPOS                            00000014
+ML_finish                         00000386
+ML_finish_0                       00000441
+ML_finish_1                       00000444
+ML_hdinit                         00000345
+ML_hdinit_0                       00000391
+ML_hdinit_1                       00000394
+ML_noreport                       0000035E
+ML_noreport_0                     000003C1
+ML_noreport_1                     000003C4
+ML_realtime                       00000353
+ML_realtime_0                     00000397
+ML_realtime_1                     000003AD
+ML_report                         00000369
+ML_report_0                       000003C7
+ML_report_1                       000003E2
+ML_report_2                       000003F8
+ML_report_3                       0000040E
+ML_report_4                       00000418
+ML_report_5                       00000420
+ML_report_6                       00000428
+ML_report_7                       00000430
+ML_report_8                       00000438
+ML_rtcinit                        00000350
+ML_run                            0000037B
+ML_run_0                          0000043B
+ML_run_1                          0000043E
+MODLW                             
+MOVFF                             
+MOVLF                             
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 42
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+MULLW                             
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000002
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RC8                           00000006
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_TX8                           00000006
+NOT_W                             00000002
+NOT_WRITE                         00000002
+NULL                              0x00
+OBF                               00000006
+OERR                              00000001
+OPTION_REG                        00000081
+P                                 00000004
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+PEN                               00000002
+PHASE_FINISH                      6
+PHASE_HDINIT                      0
+PHASE_NOREPORT                    3
+PHASE_REALTIME                    2
+PHASE_REPORT                      4
+PHASE_RTCINIT                     1
+PHASE_RUN                         5
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+PIR2                              0000000D
+PMOTOR                            PORTC, 1
+PORTA                             00000005
+PORTB                             00000006
+PORTC                             00000007
+PORTD                             00000008
+PORTE                             00000009
+PR2                               00000092
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+PSPIE                             00000007
+PSPIF                             00000007
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 43
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PSPMODE                           00000004
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RC8_9                             00000006
+RC9                               00000006
+RCD8                              00000000
+RCEN                              00000003
+RCIE                              00000005
+RCIF                              00000005
+RCREG                             0000001A
+RCSTA                             00000018
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+READ_WRITE                        00000002
+ROWS                              00000004
+RP0                               00000005
+RP1                               00000006
+RSEN                              00000001
+RX9                               00000006
+RX9D                              00000000
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 44
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+R_NOT_W                           00000002
+R_W                               00000002
+S                                 00000003
+SEN                               00000000
+SMOTOR_EN                         PORTE, 2
+SMOTOR_S0                         PORTD, 0
+SMOTOR_S1                         PORTD, 1
+SMOTOR_S2                         PORTE, 0
+SMOTOR_S3                         PORTE, 1
+SMOTOR_SPD_F                      00000006
+SMOTOR_STEPS                      0000001C
+SMP                               00000007
+SPBRG                             00000099
+SPEN                              00000007
+SREN                              00000005
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPCON2                           00000091
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+STOP_BUT                          0x0B
+STORE_FORCE                       
+SWMOTOR                           PORTC, 0
+SYNC                              00000004
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+T1INSYNC                          00000002
+T1OSCEN                           00000003
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+TABLE                             
+THD_BG                            00000005
+THD_CL3LED                        00000050
+THD_IRLED                         0000001C
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 45
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TMR1                              0000000E
+TMR1CS                            00000001
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000087
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000088
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000089
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 46
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TRMT                              00000001
+TRUE                              0xFF
+TX8_9                             00000006
+TX9                               00000006
+TX9D                              00000000
+TXD8                              00000000
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             00000019
+TXSTA                             00000098
+UA                                00000001
+VMOTOR_C0                         PORTC, 2
+VMOTOR_C1                         PORTC, 3
+W                                 00000000
+WCOL                              00000007
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_BOREN_OFF                        00003FBF
+_BOREN_ON                         00003FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_ALL                           00000FCF
+_CP_HALF                          00001FDF
+_CP_OFF                           00003FFF
+_CP_UPPER_256                     00002FEF
+_DEBUG_OFF                        00003FFF
+_DEBUG_ON                         000037FF
+_DEVID1                           00002006
+_FOSC_EXTRC                       00003FFF
+_FOSC_HS                          00003FFE
+_FOSC_LP                          00003FFC
+_FOSC_XT                          00003FFD
+_HS_OSC                           00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LP_OSC                           00003FFC
+_LVP_OFF                          00003F7F
+_LVP_ON                           00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_RC_OSC                           00003FFF
+_WDTE_OFF                         00003FFB
+_WDTE_ON                          00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 47
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_WRT_ENABLE_OFF                   00003DFF
+_WRT_ENABLE_ON                    00003FFF
+_WRT_OFF                          00003DFF
+_WRT_ON                           00003FFF
+_XT_OSC                           00003FFD
+__16F877                          00000001
+addday                            000001EB
+addsec                            000001D5
+arg                               00000020
+arg2                              00000021
+arith_temp                        00000022
+arith_temp2                       00000023
+asdf                              00000500
+calcruntime                       000001FE
+calcruntime_loop                  0000020D
+calcruntime_next1                 00000203
+calcruntime_next2                 0000020A
+calcruntime_next3                 00000212
+calcruntime_overflow              00000214
+camelr                            00000067
+char_keynumber                    000000B6
+char_slash                        000000C6
+copydec                           00000217
+copydec_copyhundreds              00000222
+copydec_copytens                  00000236
+copydec_ending                    00000241
+copydec_ones                      00000239
+copydec_tens                      00000227
+copystring                        00000244
+copystring_loop                   00000245
+delay100ms                        00000000
+delay1sl                          00000000
+delay50us                         00000000
+delay5ms                          00000000
+delayX100msm                      00000000
+delayX50usm                       00000000
+delayX5msm                        00000000
+display                           0000024E
+divfn                             0000025C
+divfn_loop                        00000261
+divfn_next                        00000266
+end_hour                          00000060
+end_min                           00000061
+end_sec                           00000062
+forcesensor                       00000269
+fs_1                              00000068
+fs_2                              00000069
+init                              00000102
+init_pic                          0000010D
+initrun                           000002DE
+initrun_pat                       000002E5
+initrun_pat1                      000002F3
+initrun_pat1rl                    000002F6
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 48
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+initrun_pat2                      00000311
+initrun_pat2rl                    00000314
+initrun_patt                      00000303
+int_rb_end                        000000FA
+int_rb_skip                       000000FB
+int_tmr0_end                      000000E4
+int_tmr0_skip                     000000E5
+interrupt                         000000CD
+keypad_timeout                    0000032C
+keypoll                           000000C9
+keyresp                           00000278
+keyresp_next                      00000292
+kp_to_nonewsec                    00000331
+layout                            00000024
+line_num                          00000049
+literal                           00000005
+literal_addr                      0000004A
+log_next                          0000004C
+log_total                         0000004B
+main                              000000C8
+makeline                          00000332
+mulfn                             0000044E
+mulfn_loop                        00000454
+mulfn_overflow                    00000459
+newsec                            0000004D
+pat1                              00000064
+pat2                              00000065
+phase                             0000004E
+readlog                           0000045A
+readlog_endsec_next               000004AA
+readlog_layoutnext                00000492
+readlog_next                      000004B7
+realtime                          00000296
+redr                              00000066
+report                            0000029A
+report_last                       000002A1
+report_next                       000002B7
+report_num                        0000004F
+reset_hardware                    0000012B
+reset_realtime                    00000133
+reset_rt_hms                      00000192
+reset_rt_hms0                     000001AE
+reset_rt_hms1                     000001B5
+reset_rt_hms2                     000001B9
+reset_rt_hms3                     000001C0
+reset_rt_hms4                     000001C4
+reset_rt_hms5                     000001CB
+reset_rt_hmsrl                    000001CE
+reset_rt_ymd                      00000148
+reset_rt_ymd0                     00000164
+reset_rt_ymd1                     0000016B
+reset_rt_ymd2                     0000016F
+reset_rt_ymd3                     00000176
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 49
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+reset_rt_ymd4                     0000017A
+reset_rt_ymd5                     00000181
+reset_rt_ymdrl                    00000184
+reset_software                    00000124
+rs_hardware_loop                  000004C7
+rt_counter                        00000003
+rt_day                            00000056
+rt_hour                           00000057
+rt_min                            00000058
+rt_month                          00000055
+rt_sec                            00000059
+rt_year                           00000054
+run                               000004B9
+run_countchips                    00000540
+run_eexpat1                       00000000
+run_eexpat2                       00000000
+run_eexpat3                       00000000
+run_eexpat4                       00000000
+run_eexpat5                       00000000
+run_eexpat6                       00000000
+run_end                           00000544
+run_expat1                        00000000
+run_expat2                        00000000
+run_expat3                        00000000
+run_expat4                        00000000
+run_expat5                        00000000
+run_expat6                        00000000
+run_hardware_bottom_motor         000004C7
+run_loop                          000004C5
+run_sequence1                     000004D6
+runtime                           00000063
+scroll_down                       000002D3
+scroll_up                         000002CB
+st_day                            0000005C
+st_hour                           0000005D
+st_min                            0000005E
+st_month                          0000005B
+st_sec                            0000005F
+st_year                           0000005A
+startrun                          000002DC
+status_temp                       00000001
+stop                              000000F9
+stoprun                           0000032B
+str_camelr                        00000075
+str_colon                         00000044
+str_dash                          00000042
+str_dot                           00000085
+str_emerstop                      000000A6
+str_enterhms                      00000032
+str_enterymd                      00000023
+str_entry                         00000046
+str_finish                        0000005A
+str_init                          00000009
+MPASM  5.48                          MAIN.ASM   4-9-2013  12:55:00         PAGE 50
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+str_insp_fin                      00000087
+str_noreport                      00000019
+str_null                          000000B5
+str_pat1                          00000096
+str_pat2                          0000009E
+str_redr                          0000006F
+str_running                       0000007D
+str_runtime                       00000063
+str_s                             0000006D
+str_start                         00000052
+str_yearhead                      0000003F
+table_temp                        00000004
+temp                              00000050
+temp2                             00000051
+temp3                             00000052
+temp4                             00000053
+unused_key                        00000292
+w_temp                            00000000
+wait_release                      00000292
+writeline                         0000054F
+writeline_loop                    00000551
+writelog                          00000557
+writelog_layoutnext               0000058C
+
+Errors   :     0
+Warnings :    24 reported,     0 suppressed
+Messages :     9 reported,     0 suppressed
+
+
